@@ -4,13 +4,29 @@ Shared Docker toolchain for scripted CAD builds and renders.
 
 The image provides a single reusable CI/runtime environment for repositories that use OpenSCAD and PythonSCAD. This avoids downloading and caching a separate ~80 MB OpenSCAD installation in every CAD repository.
 
+
+## v0.1.1
+
+`v0.1.1` fixes the public OpenSCAD command exposed by the container.
+
+The Ubuntu nightly package installs `openscad-nightly`. The toolchain now
+provides a stable `/usr/local/bin/openscad` symlink, so consumer repositories
+can always invoke:
+
+```bash
+openscad --version
+```
+
+`v0.1.0` remains immutable and is intentionally not replaced.
+
+
 ## Status
 
 **Current development version: v0.1.x**
 
 The `0.x` series is intentionally experimental. The image layout, included tools and versioning policy may still change while it is being tested with real CAD repositories.
 
-Do not treat `v0.1.0` as a stable long-term interface yet.
+Do not treat `v0.1.1` as a stable long-term interface yet.
 
 ## Included tools
 
@@ -37,7 +53,7 @@ ghcr.io/brainboxemb/scad-toolchain
 Examples of tags:
 
 ```text
-ghcr.io/brainboxemb/scad-toolchain:v0.1.0
+ghcr.io/brainboxemb/scad-toolchain:v0.1.1
 ghcr.io/brainboxemb/scad-toolchain:edge
 ghcr.io/brainboxemb/scad-toolchain:sha-<commit>
 ```
@@ -47,7 +63,7 @@ ghcr.io/brainboxemb/scad-toolchain:sha-<commit>
 Use a version tag in CAD repositories when you want reproducible builds:
 
 ```text
-v0.1.0
+v0.1.1
 ```
 
 `edge` always represents a build from the current `main` branch and is therefore mainly useful for testing the toolchain itself.
@@ -59,7 +75,7 @@ A released version tag should never be reused for a different image. If the cont
 The project follows semantic-style versioning while it is experimental:
 
 ```text
-v0.1.0  first usable test release
+v0.1.1  first usable test release
 v0.1.1  backwards-compatible fix to v0.1
 v0.2.0  meaningful toolchain or behaviour change
 v1.0.0  first intentionally stable toolchain
@@ -73,7 +89,7 @@ A next refinement is to resolve and record the exact OpenSCAD snapshot/build ide
 
 ---
 
-# Creating the first v0.1.0 release
+# Creating the first v0.1.1 release
 
 There are two different things involved:
 
@@ -84,29 +100,29 @@ For this repository, pushing the Git tag automatically creates the corresponding
 
 ## 1. Commit the version you want to release
 
-Make sure `main` contains exactly what you want in `v0.1.0`:
+Make sure `main` contains exactly what you want in `v0.1.1`:
 
 ```bash
 git status
 git add .
-git commit -m "Prepare SCAD toolchain v0.1.0"
+git commit -m "Prepare SCAD toolchain v0.1.1"
 git push origin main
 ```
 
 If there is nothing new to commit, only the final `git push` is relevant.
 
-## 2. Create the v0.1.0 Git tag
+## 2. Create the v0.1.1 Git tag
 
 Create an annotated tag:
 
 ```bash
-git tag -a v0.1.0 -m "SCAD toolchain v0.1.0"
+git tag -a v0.1.1 -m "SCAD toolchain v0.1.1"
 ```
 
 Push it to GitHub:
 
 ```bash
-git push origin v0.1.0
+git push origin v0.1.1
 ```
 
 That tag triggers `.github/workflows/build.yml`.
@@ -114,7 +130,7 @@ That tag triggers `.github/workflows/build.yml`.
 The workflow builds and publishes:
 
 ```text
-ghcr.io/brainboxemb/scad-toolchain:v0.1.0
+ghcr.io/brainboxemb/scad-toolchain:v0.1.1
 ```
 
 It also performs the smoke test against the published image.
@@ -135,19 +151,19 @@ The tagged workflow run should complete successfully.
 
 On the GitHub repository page, use the **Packages** section in the right sidebar and open the `scad-toolchain` package.
 
-You should see a version associated with `v0.1.0`.
+You should see a version associated with `v0.1.1`.
 
 From a machine with Docker you can also test it directly:
 
 ```bash
-docker pull ghcr.io/brainboxemb/scad-toolchain:v0.1.0
+docker pull ghcr.io/brainboxemb/scad-toolchain:v0.1.1
 ```
 
 Then inspect it:
 
 ```bash
 docker run --rm \
-  ghcr.io/brainboxemb/scad-toolchain:v0.1.0 \
+  ghcr.io/brainboxemb/scad-toolchain:v0.1.1 \
   scad-toolchain-info
 ```
 
@@ -158,8 +174,8 @@ A GitHub Release is **not required** for GHCR publication. The Git tag is enough
 If you also want release notes visible under GitHub Releases, you can create them afterwards with the GitHub CLI:
 
 ```bash
-gh release create v0.1.0 \
-  --title "SCAD toolchain v0.1.0" \
+gh release create v0.1.1 \
+  --title "SCAD toolchain v0.1.1" \
   --notes "First experimental OpenSCAD + PythonSCAD toolchain image."
 ```
 
@@ -169,13 +185,13 @@ Or use the GitHub web interface:
 repository
   -> Releases
   -> Draft a new release
-  -> choose tag v0.1.0
+  -> choose tag v0.1.1
   -> Publish release
 ```
 
 ---
 
-# Using v0.1.0 from another repository
+# Using v0.1.1 from another repository
 
 A GitHub Actions job can run directly inside the toolchain container:
 
@@ -185,7 +201,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     container:
-      image: ghcr.io/brainboxemb/scad-toolchain:v0.1.0
+      image: ghcr.io/brainboxemb/scad-toolchain:v0.1.1
 
     steps:
       - uses: actions/checkout@v4
@@ -206,7 +222,7 @@ For a public GHCR package, consumers normally do not need separate registry cred
 
 # Creating the next version
 
-Never replace `v0.1.0` with changed contents.
+Never replace `v0.1.1` with changed contents.
 
 For a small fix:
 
@@ -222,7 +238,7 @@ git tag -a v0.2.0 -m "SCAD toolchain v0.2.0"
 git push origin v0.2.0
 ```
 
-Existing CAD projects can then remain pinned to `v0.1.0` until they are deliberately upgraded.
+Existing CAD projects can then remain pinned to `v0.1.1` until they are deliberately upgraded.
 
 ---
 
@@ -260,8 +276,8 @@ Deleting a container image does **not** automatically delete its Git tag.
 If you really also want to remove the Git tag locally and remotely:
 
 ```bash
-git tag -d v0.1.0
-git push origin --delete v0.1.0
+git tag -d v0.1.1
+git push origin --delete v0.1.1
 ```
 
 Normally, do **not** delete release tags merely because an old image is no longer interesting. Tags are useful project history.

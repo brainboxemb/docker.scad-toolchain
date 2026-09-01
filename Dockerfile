@@ -22,6 +22,7 @@ RUN wget -qO /etc/apt/trusted.gpg.d/obs-openscad-nightly.asc \
       > /etc/apt/sources.list.d/openscad-nightly.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends openscad-nightly \
+    && ln -s "$(command -v openscad-nightly)" /usr/local/bin/openscad \
     && rm -rf /var/lib/apt/lists/*
 
 # PythonSCAD release AppImage. Resolve the exact Linux x86_64 AppImage from the
