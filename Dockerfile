@@ -8,7 +8,7 @@ LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD CI toolchain"
 LABEL org.opencontainers.image.source="https://github.com/brainboxemb/docker.scad-toolchain"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl wget jq gnupg xvfb \
+    ca-certificates curl wget jq gnupg git xvfb \
     fontconfig fonts-dejavu-core \
     libgl1 libegl1 libx11-6 libxext6 libxrender1 libxi6 libxkbcommon0 \
     libdbus-1-3 libglib2.0-0 libfuse2 \
