@@ -1,297 +1,199 @@
 # docker.scad-toolchain
 
-Docker-based toolchain for reproducible OpenSCAD and PythonSCAD builds, renders and CI workflows.
+Shared Docker toolchain for scripted CAD builds and renders.
 
-The image provides a shared CAD build environment for GitHub Actions and local Docker-based workflows.
+The image provides a single reusable CI/runtime environment for repositories that use OpenSCAD and PythonSCAD. This avoids downloading and caching a separate ~80 MB OpenSCAD installation in every CAD repository.
 
-It is intended for projects that use OpenSCAD, PythonSCAD or both.
 
-## Purpose
+## v0.1.1
 
-Without a shared toolchain, every CAD repository has to install and maintain its own OpenSCAD and PythonSCAD environment.
+`v0.1.1` fixes the public OpenSCAD command exposed by the container.
 
-This repository centralizes that environment:
+The Ubuntu nightly package installs `openscad-nightly`. The toolchain now
+provides a stable `/usr/local/bin/openscad` symlink, so consumer repositories
+can always invoke:
 
-```text
-docker.scad-toolchain
-        |
-        | builds and publishes
-        v
-GitHub Container Registry
-        |
-        | consumed by
-        v
-CAD repositories
+```bash
+openscad --version
 ```
 
-The container provides:
+`v0.1.0` remains immutable and is intentionally not replaced.
 
-- OpenSCAD
+
+## Status
+
+**Current development version: v0.1.x**
+
+The `0.x` series is intentionally experimental. The image layout, included tools and versioning policy may still change while it is being tested with real CAD repositories.
+
+Do not treat `v0.1.1` as a stable long-term interface yet.
+
+## Included tools
+
+- OpenSCAD development snapshot (`openscad-nightly`)
 - PythonSCAD
-- Python
-- Xvfb for headless rendering
-- required runtime libraries
-- fonts and basic render dependencies
-- toolchain information helpers
+- Python 3
+- Xvfb
+- basic rendering and font dependencies
 
-Individual CAD repositories can therefore focus on design, build and verification instead of repeatedly installing CAD tooling.
+Tool versions and build details can be inspected inside the image with:
+
+```bash
+scad-toolchain-info
+```
 
 ## Container image
 
-Images are published to:
+GitHub Actions publishes the image to GitHub Container Registry (GHCR):
 
 ```text
 ghcr.io/brainboxemb/scad-toolchain
 ```
 
-Released versions should be consumed using an explicit tag:
+Examples of tags:
 
 ```text
-ghcr.io/brainboxemb/scad-toolchain:<version>
+ghcr.io/brainboxemb/scad-toolchain:v0.1.1
+ghcr.io/brainboxemb/scad-toolchain:edge
+ghcr.io/brainboxemb/scad-toolchain:sha-<commit>
 ```
 
-For example:
+### Which tag should I use?
 
-```yaml
-container:
-  image: ghcr.io/brainboxemb/scad-toolchain:v0.1.1
-```
-
-Moving tags such as `latest` or `edge` should not be used for reproducible CAD builds.
-
-## Design decisions
-
-### Stable public command names
-
-The toolchain exposes a stable command interface to consuming repositories:
-
-```text
-openscad
-pythonscad
-python3
-scad-toolchain-info
-```
-
-Consumers should depend on these names rather than on implementation details of the underlying packages.
-
-For example, an OpenSCAD development package may internally install:
-
-```text
-openscad-nightly
-```
-
-The container deliberately normalizes this to:
-
-```text
-openscad
-```
-
-This keeps downstream workflows independent from how a particular OpenSCAD package is named or distributed.
-
-### Explicit toolchain versions
-
-CAD repositories should pin an explicit toolchain image version.
-
-A CAD build should not silently start using a newer OpenSCAD or PythonSCAD merely because a moving container tag changed.
-
-Instead, a toolchain update should be a deliberate repository change:
-
-```text
-toolchain vX.Y.Z
-        |
-        | validate
-        v
-update consuming project
-        |
-        | rebuild / render / verify
-        v
-commit toolchain upgrade
-```
-
-This makes changes in geometry, rendering or export behavior easier to identify and reproduce.
-
-### Centralized CAD environment
-
-The toolchain image contains the common CAD runtime instead of requiring every consuming repository to download and cache its own copy.
-
-Conceptually:
-
-```text
-                    scad-toolchain
-                         |
-             +-----------+-----------+
-             |           |           |
-             v           v           v
-        CAD project   CAD library   CAD project
-```
-
-This avoids maintaining separate OpenSCAD installation logic and large binary caches in every repository.
-
-### External validation
-
-The image is not considered validated merely because it successfully builds.
-
-Published images are tested from a separate consumer repository:
-
-```text
-docker.scad-toolchain.test
-```
-
-This distinction is intentional.
-
-```text
-docker.scad-toolchain
-        |
-        | proves
-        v
-the image can be built
-
-docker.scad-toolchain.test
-        |
-        | proves
-        v
-the published image can be consumed
-```
-
-The external tests verify the public CLI interface and real OpenSCAD/PythonSCAD render and export operations.
-
-### Tool versions outside the README
-
-Exact installed versions of OpenSCAD, PythonSCAD and Python are deliberately not duplicated in this README.
-
-The actual image is authoritative.
-
-Versions can be inspected with:
-
-```bash
-scad-toolchain-info
-```
-
-Example output:
-
-```text
-SCAD toolchain
-==============
-
-OpenSCAD   : <installed OpenSCAD version>
-PythonSCAD : <installed PythonSCAD version>
-Python     : <installed Python version>
-```
-
-Build-version selection is maintained in the repository configuration rather than copied into descriptive README text.
-
-This avoids stale version documentation.
-
-### Immutable releases
-
-Once a toolchain version has been published, that version should not be changed.
-
-For example, if:
-
-```text
-ghcr.io/brainboxemb/scad-toolchain:v0.1.0
-```
-
-has been published, a later fix should result in another version such as:
+Use a version tag in CAD repositories when you want reproducible builds:
 
 ```text
 v0.1.1
 ```
 
-rather than replacing the existing `v0.1.0` image.
+`edge` always represents a build from the current `main` branch and is therefore mainly useful for testing the toolchain itself.
 
-This makes historical CAD builds reproducible.
+A released version tag should never be reused for a different image. If the contents change, create a new version such as `v0.1.1` or `v0.2.0`.
 
-## Repository layout
+## Version policy
 
-```text
-docker.scad-toolchain/
-├── Dockerfile
-├── versions.env
-├── README.md
-├── scripts/
-│   ├── scad-toolchain-info
-│   └── test-toolchain.sh
-├── test/
-│   └── smoke.scad
-└── .github/
-    └── workflows/
-        └── build.yml
-```
-
-## `versions.env`
-
-Tool-version selection used during the container build is maintained in:
+The project follows semantic-style versioning while it is experimental:
 
 ```text
-versions.env
+v0.1.1  first usable test release
+v0.1.1  backwards-compatible fix to v0.1
+v0.2.0  meaningful toolchain or behaviour change
+v1.0.0  first intentionally stable toolchain
 ```
 
-This makes dependency changes visible in Git history without duplicating them throughout the documentation.
+PythonSCAD is explicitly pinned in `versions.env`.
 
-Changes to the actual toolchain contents should normally lead to a new toolchain release.
+OpenSCAD currently comes from the official development-snapshot APT repository while the Docker image is built. Once an image is published under a version tag, that image itself is immutable by convention: do not rebuild/re-push the same release tag with different contents.
 
-## Public interface
+A next refinement is to resolve and record the exact OpenSCAD snapshot/build identifier as OCI metadata before publishing a release image.
 
-The following commands form the expected consumer-facing interface:
+---
+
+# Creating the first v0.1.1 release
+
+There are two different things involved:
+
+1. a **Git tag** in the source repository;
+2. a **container image version** in GHCR.
+
+For this repository, pushing the Git tag automatically creates the corresponding container image tag. A GitHub "Release" page is optional.
+
+## 1. Commit the version you want to release
+
+Make sure `main` contains exactly what you want in `v0.1.1`:
 
 ```bash
-openscad
-pythonscad
-python3
-scad-toolchain-info
+git status
+git add .
+git commit -m "Prepare SCAD toolchain v0.1.1"
+git push origin main
 ```
 
-Internal package names or installation paths are implementation details and should not be used by downstream repositories.
+If there is nothing new to commit, only the final `git push` is relevant.
 
-## Building locally
+## 2. Create the v0.1.1 Git tag
 
-Build the image from the repository root:
+Create an annotated tag:
 
 ```bash
-docker build -t scad-toolchain:local .
+git tag -a v0.1.1 -m "SCAD toolchain v0.1.1"
 ```
 
-Inspect the resulting environment:
+Push it to GitHub:
+
+```bash
+git push origin v0.1.1
+```
+
+That tag triggers `.github/workflows/build.yml`.
+
+The workflow builds and publishes:
+
+```text
+ghcr.io/brainboxemb/scad-toolchain:v0.1.1
+```
+
+It also performs the smoke test against the published image.
+
+## 3. Check the workflow
+
+On GitHub:
+
+```text
+repository
+  -> Actions
+  -> Build SCAD toolchain
+```
+
+The tagged workflow run should complete successfully.
+
+## 4. Check the published container
+
+On the GitHub repository page, use the **Packages** section in the right sidebar and open the `scad-toolchain` package.
+
+You should see a version associated with `v0.1.1`.
+
+From a machine with Docker you can also test it directly:
+
+```bash
+docker pull ghcr.io/brainboxemb/scad-toolchain:v0.1.1
+```
+
+Then inspect it:
 
 ```bash
 docker run --rm \
-  scad-toolchain:local \
+  ghcr.io/brainboxemb/scad-toolchain:v0.1.1 \
   scad-toolchain-info
 ```
 
-## Using the toolchain locally
+## Optional: create a GitHub Release page
 
-A CAD project can be mounted into the container.
+A GitHub Release is **not required** for GHCR publication. The Git tag is enough for this workflow.
 
-For example, an OpenSCAD STL export:
-
-```bash
-docker run --rm \
-  -v "$PWD:/work" \
-  -w /work \
-  ghcr.io/brainboxemb/scad-toolchain:<version> \
-  openscad \
-    -o out/model.stl \
-    model.scad
-```
-
-A headless PNG render can use Xvfb:
+If you also want release notes visible under GitHub Releases, you can create them afterwards with the GitHub CLI:
 
 ```bash
-docker run --rm \
-  -v "$PWD:/work" \
-  -w /work \
-  ghcr.io/brainboxemb/scad-toolchain:<version> \
-  xvfb-run -a openscad \
-    --render \
-    -o out/model.png \
-    model.scad
+gh release create v0.1.1 \
+  --title "SCAD toolchain v0.1.1" \
+  --notes "First experimental OpenSCAD + PythonSCAD toolchain image."
 ```
 
-## Using the toolchain in GitHub Actions
+Or use the GitHub web interface:
 
-A consuming repository can run a complete job inside the published image:
+```text
+repository
+  -> Releases
+  -> Draft a new release
+  -> choose tag v0.1.1
+  -> Publish release
+```
+
+---
+
+# Using v0.1.1 from another repository
+
+A GitHub Actions job can run directly inside the toolchain container:
 
 ```yaml
 jobs:
@@ -299,186 +201,159 @@ jobs:
     runs-on: ubuntu-24.04
 
     container:
-      image: ghcr.io/brainboxemb/scad-toolchain:<version>
+      image: ghcr.io/brainboxemb/scad-toolchain:v0.1.1
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show toolchain
+      - name: Toolchain info
         run: scad-toolchain-info
 
-      - name: Render model
-        run: |
-          xvfb-run -a openscad \
-            --render \
-            -o out/model.png \
-            model.scad
+      - name: OpenSCAD version
+        run: openscad-nightly --version
+
+      - name: PythonSCAD version
+        run: pythonscad --version
 ```
 
-If the GHCR package is private, appropriate package permissions and container credentials must be configured.
+For a public GHCR package, consumers normally do not need separate registry credentials just to pull it. If the package is private, the consuming workflow must have suitable package read access/authentication.
 
-## Release model
+---
 
-The toolchain uses semantic version tags:
+# Creating the next version
 
-```text
-vMAJOR.MINOR.PATCH
-```
+Never replace `v0.1.1` with changed contents.
 
-During development and experimentation, releases remain below `v1.0.0`.
-
-Typical interpretation:
-
-- **PATCH** — compatible fix to the existing toolchain;
-- **MINOR** — new capability or meaningful toolchain change;
-- **MAJOR** — incompatible change to the established toolchain contract.
-
-The exact meaning can evolve while the project remains in the `v0.x` phase, but existing released tags remain immutable.
-
-## Creating a release
-
-First commit the intended toolchain state:
+For a small fix:
 
 ```bash
-git add .
-git commit -m "Describe the toolchain change"
-git push
+git tag -a v0.1.1 -m "SCAD toolchain v0.1.1"
+git push origin v0.1.1
 ```
 
-Create an annotated release tag:
+For a more substantial change:
 
 ```bash
-git tag -a vX.Y.Z -m "SCAD toolchain vX.Y.Z"
+git tag -a v0.2.0 -m "SCAD toolchain v0.2.0"
+git push origin v0.2.0
 ```
 
-Push it:
+Existing CAD projects can then remain pinned to `v0.1.1` until they are deliberately upgraded.
+
+---
+
+# Removing a released container version
+
+Container versions do not normally expire just because they are old. They remain in GitHub Packages until they are removed (subject to GitHub's package policies).
+
+Be careful: deleting an image can break repositories that are still pinned to it.
+
+## Delete a GHCR version in the GitHub UI
+
+For a repository-linked package:
+
+```text
+repository
+  -> Packages
+  -> scad-toolchain
+  -> View and manage all versions
+```
+
+Find the version you want to remove, open its `...` menu and choose:
+
+```text
+Delete version
+```
+
+GitHub asks you to confirm the deletion.
+
+Deleted package versions may be restorable for a limited period under GitHub's package restore rules.
+
+## Deleting the Git tag is separate
+
+Deleting a container image does **not** automatically delete its Git tag.
+
+If you really also want to remove the Git tag locally and remotely:
 
 ```bash
-git push origin vX.Y.Z
+git tag -d v0.1.1
+git push origin --delete v0.1.1
 ```
 
-The GitHub Actions workflow builds the image and publishes:
+Normally, do **not** delete release tags merely because an old image is no longer interesting. Tags are useful project history.
 
-```text
-ghcr.io/brainboxemb/scad-toolchain:vX.Y.Z
-```
+Likewise, deleting the Git tag does not automatically delete an already-published GHCR image.
 
-A GitHub Release page may additionally be created for human-readable release notes.
+---
 
-The Git tag and published container image are the important immutable technical references.
+# Local development
 
-## Release notes versus design documentation
-
-Release notes describe **what changed in a particular version**.
-
-For example:
-
-```text
-Fixed OpenSCAD command exposure
-Added additional rendering dependency
-Updated PythonSCAD
-```
-
-Those details belong in GitHub Releases or another changelog mechanism.
-
-The README instead documents **why the toolchain is structured the way it is**.
-
-For example, normalizing package-specific OpenSCAD executables to a stable `openscad` command is a permanent design decision and therefore belongs in this README.
-
-## External verification
-
-Published toolchain versions are validated by:
-
-```text
-docker.scad-toolchain.test
-```
-
-The intended release flow is:
-
-```text
-toolchain source
-      |
-      v
-build image
-      |
-      v
-publish GHCR version
-      |
-      v
-external test suite
-      |
-      v
-validated toolchain
-      |
-      v
-adopt in CAD projects
-```
-
-Test results are published separately by the test repository.
-
-A toolchain version should preferably be externally validated before it is adopted broadly by consuming CAD repositories.
-
-## Updating a consuming CAD repository
-
-A CAD project should pin an explicit version:
-
-```yaml
-container:
-  image: ghcr.io/brainboxemb/scad-toolchain:<version>
-```
-
-When upgrading:
-
-1. publish the new toolchain version;
-2. validate it using `docker.scad-toolchain.test`;
-3. update the pinned version in the consuming repository;
-4. regenerate relevant CAD output;
-5. inspect renders and geometry;
-6. run project verification;
-7. commit the explicit toolchain upgrade.
-
-This makes the environment change visible as part of the project history.
-
-## Removing a package version
-
-Container versions are managed through GitHub Container Registry.
-
-On GitHub:
-
-1. open the `scad-toolchain` package;
-2. choose **View and manage all versions**;
-3. locate the desired package version;
-4. open its menu;
-5. choose **Delete version**.
-
-Deleting a GHCR package version does not automatically delete the Git tag.
-
-A tag created by mistake can be removed separately.
-
-Delete the local tag:
+Load the pinned versions:
 
 ```bash
-git tag -d vX.Y.Z
+set -a
+source versions.env
+set +a
 ```
 
-Delete the remote tag:
+Build locally:
 
 ```bash
-git push origin :refs/tags/vX.Y.Z
+docker build \
+  --build-arg PYTHONSCAD_VERSION="$PYTHONSCAD_VERSION" \
+  -t scad-toolchain:local .
 ```
 
-Published versions that have already been consumed by other projects should normally remain available.
+Run the included smoke test:
 
-## Related repositories
+```bash
+docker run --rm \
+  -v "$PWD:/work" \
+  scad-toolchain:local \
+  bash /work/scripts/test-toolchain.sh
+```
 
-### `docker.scad-toolchain`
+Inspect the toolchain:
 
-Builds and publishes the shared OpenSCAD/PythonSCAD toolchain.
+```bash
+docker run --rm scad-toolchain:local scad-toolchain-info
+```
 
-### `docker.scad-toolchain.test`
+## Repository responsibilities
 
-Externally validates published toolchain images and publishes browsable verification results.
+The intended separation is:
 
-### CAD and library repositories
+```text
+docker.scad-toolchain
+    -> CAD runtime/toolchain
 
-Consume an explicitly versioned and validated SCAD toolchain as their build and render environment.
+brainboxemb.github.actions
+    -> reusable GitHub Actions/build logic
+
+CAD repositories
+    -> design source, documentation, build and verification rules
+```
+
+This keeps individual CAD repositories from each maintaining their own OpenSCAD/PythonSCAD installation logic and binary cache.
+
+
+### Git available to consumer workflows
+
+The container includes the Git CLI as part of its public CI toolchain.
+
+Some consuming CAD workflows regenerate documentation or build output and then
+inspect or commit changed generated files. Those workflows should not need to
+install Git separately inside each repository.
+
+Typical supported operations include:
+
+```bash
+git status
+git diff
+git add
+git commit
+```
+
+Repository authentication and commit policy remain the responsibility of the
+consuming GitHub Actions workflow.
+

@@ -9,3 +9,5 @@ printf "PythonSCAD : "
 pythonscad --version 2>&1
 printf "Python     : "
 python3 --version
+printf "Git         : "
+git --version
