@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "SCAD toolchain"
+echo "=============="
+printf "OpenSCAD   : "
+openscad-nightly --version 2>&1 || openscad --version 2>&1
+printf "PythonSCAD : "
+pythonscad --version 2>&1 || true
+printf "Python     : "
+python3 --version

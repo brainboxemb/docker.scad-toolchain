@@ -1,0 +1,78 @@
+name: Build SCAD toolchain
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'Dockerfile'
+      - 'versions.env'
+      - 'scripts/**'
+      - 'test/**'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: scad-toolchain-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Load versions
+        id: versions
+        shell: bash
+        run: |
+          set -a
+          source versions.env
+          set +a
+          echo "pythonscad=${PYTHONSCAD_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/scad-toolchain
+          tags: |
+            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
+      - name: Build and publish
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: |
+            PYTHONSCAD_VERSION=${{ steps.versions.outputs.pythonscad }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test published image
+        shell: bash
+        run: |
+          IMAGE="$(echo '${{ steps.meta.outputs.tags }}' | head -n1)"
+          docker run --rm \
+            -v "$PWD:/work" \
+            "$IMAGE" \
+            bash /work/scripts/test-toolchain.sh
