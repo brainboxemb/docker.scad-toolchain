@@ -5,20 +5,6 @@ Shared Docker toolchain for scripted CAD builds and renders.
 The image provides a single reusable CI/runtime environment for repositories that use OpenSCAD and PythonSCAD. This avoids downloading and caching a separate ~80 MB OpenSCAD installation in every CAD repository.
 
 
-## v0.1.1
-
-`v0.1.1` fixes the public OpenSCAD command exposed by the container.
-
-The Ubuntu nightly package installs `openscad-nightly`. The toolchain now
-provides a stable `/usr/local/bin/openscad` symlink, so consumer repositories
-can always invoke:
-
-```bash
-openscad --version
-```
-
-`v0.1.0` remains immutable and is intentionally not replaced.
-
 
 ## Status
 
@@ -356,4 +342,3 @@ git commit
 
 Repository authentication and commit policy remain the responsibility of the
 consuming GitHub Actions workflow.
-
