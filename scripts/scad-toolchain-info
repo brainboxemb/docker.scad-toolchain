@@ -3,11 +3,24 @@ set -euo pipefail
 
 echo "SCAD toolchain"
 echo "=============="
+
 printf "OpenSCAD   : "
 openscad --version 2>&1
+
 printf "PythonSCAD : "
 pythonscad --version 2>&1
+
 printf "Python     : "
 python3 --version
+
 printf "Git        : "
 git --version
+
+printf "BOSL2      : v%s\n" "${BOSL2_VERSION:-unknown}"
+
+printf "pybosl2    : "
+PYTHONPATH="${PYTHONPATH:-/opt/python-libs}" \
+python3 -c 'import importlib.metadata as m; print(m.version("pybosl2"))'
+
+printf "OPENSCADPATH: %s\n" "${OPENSCADPATH:-<unset>}"
+printf "PYTHONPATH : %s\n" "${PYTHONPATH:-<unset>}"

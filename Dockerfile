@@ -2,9 +2,11 @@ FROM ubuntu:24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG PYTHONSCAD_VERSION=1.1.2
+ARG BOSL2_VERSION=2.0.752
+ARG PYBOSL2_VERSION=0.6.7
 
 LABEL org.opencontainers.image.title="SCAD toolchain"
-LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD CI toolchain"
+LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD + BOSL2 + pybosl2 CI toolchain"
 LABEL org.opencontainers.image.source="https://github.com/brainboxemb/docker.scad-toolchain"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -42,10 +44,41 @@ RUN set -eux; \
     rm /tmp/pythonscad.AppImage; \
     ln -s /opt/pythonscad/AppRun /usr/local/bin/pythonscad
 
+# BOSL2 is installed as a normal OpenSCAD library under a stable path.
+# OPENSCADPATH below makes <BOSL2/...> includes work in consuming projects.
+RUN set -eux; \
+    mkdir -p /opt/openscad-libraries /tmp/bosl2; \
+    curl -fL \
+      "https://github.com/BelfrySCAD/BOSL2/archive/refs/tags/v${BOSL2_VERSION}.tar.gz" \
+      -o /tmp/bosl2.tar.gz; \
+    tar -xzf /tmp/bosl2.tar.gz -C /tmp/bosl2; \
+    src="$(find /tmp/bosl2 -mindepth 1 -maxdepth 1 -type d | head -n1)"; \
+    test -n "$src"; \
+    mv "$src" /opt/openscad-libraries/BOSL2; \
+    rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
+    test -f /opt/openscad-libraries/BOSL2/std.scad
+
+# Install the Python BOSL2 port into an explicit shared library directory.
+# PYTHONPATH makes the package available to both system Python and, when the
+# embedded runtime honours PYTHONPATH, PythonSCAD. The external consumer test
+# deliberately verifies the PythonSCAD case.
+RUN python3 -m pip install \
+      --no-cache-dir \
+      --break-system-packages \
+      --target /opt/python-libs \
+      "pybosl2==${PYBOSL2_VERSION}" \
+    && PYTHONPATH=/opt/python-libs python3 -c \
+      'import importlib.metadata as m; assert m.version("pybosl2")'
+
+ENV OPENSCADPATH=/opt/openscad-libraries
+ENV PYTHONPATH=/opt/python-libs
+ENV BOSL2_VERSION=${BOSL2_VERSION}
+ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}
+ENV QT_QPA_PLATFORM=offscreen
+
 COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info
 RUN chmod +x /usr/local/bin/scad-toolchain-info
 
-ENV QT_QPA_PLATFORM=offscreen
 WORKDIR /work
 
 CMD ["scad-toolchain-info"]
