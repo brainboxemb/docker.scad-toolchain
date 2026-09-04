@@ -25,8 +25,20 @@ scad-toolchain-info
 
 ## BOSL2
 
-BOSL2 is installed as a normal OpenSCAD library and exposed through
-`OPENSCADPATH`:
+BOSL2 is installed as a normal OpenSCAD library. Two public environment
+variables expose it:
+
+```text
+OPENSCADPATH=/opt/openscad-libraries
+BOSL2_ROOT=/opt/openscad-libraries/BOSL2
+```
+
+`OPENSCADPATH` is intended for normal OpenSCAD `include`/`use` resolution.
+`BOSL2_ROOT` gives PythonSCAD and other consumers an explicit filesystem path
+for APIs such as `osuse()` that do not resolve libraries through
+`OPENSCADPATH`.
+
+Normal OpenSCAD usage remains:
 
 ```scad
 include <BOSL2/std.scad>
@@ -35,6 +47,26 @@ cuboid([30, 20, 10], rounding=3);
 ```
 
 The BOSL2 version is pinned independently in `versions.env`.
+
+### PythonSCAD consuming BOSL2 SCAD files
+
+`osuse()` requires a real file path. Do not assume it searches
+`OPENSCADPATH`.
+
+Use the toolchain-provided `BOSL2_ROOT`:
+
+```python
+import os
+from pathlib import Path
+
+from pythonscad import *
+
+bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "shapes3d.scad"
+bosl2 = osuse(str(bosl2_file))
+```
+
+This keeps the physical installation path out of consumer source while still
+using the pinned BOSL2 tree supplied by the toolchain.
 
 ## pybosl2
 

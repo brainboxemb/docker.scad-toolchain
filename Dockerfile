@@ -76,6 +76,7 @@ RUN python3 -m pip install \
       'import importlib.metadata as m; import pybosl2; import shapely; assert m.version("pybosl2"); assert m.version("shapely")'
 
 ENV OPENSCADPATH=/opt/openscad-libraries
+ENV BOSL2_ROOT=/opt/openscad-libraries/BOSL2
 ENV PYTHONPATH=/opt/python-libs
 ENV BOSL2_VERSION=${BOSL2_VERSION}
 ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}

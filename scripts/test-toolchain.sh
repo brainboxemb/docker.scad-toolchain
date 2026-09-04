@@ -29,6 +29,14 @@ echo "== OpenSCAD smoke test =="
 openscad -o "$OUT/smoke.stl" "$ROOT/test/smoke.scad"
 test -s "$OUT/smoke.stl"
 
+
+echo
+echo "== BOSL2_ROOT public path =="
+test -n "${BOSL2_ROOT:-}"
+test -f "${BOSL2_ROOT}/std.scad"
+test -f "${BOSL2_ROOT}/shapes3d.scad"
+printf 'BOSL2_ROOT=%s\n' "$BOSL2_ROOT"
+
 echo
 echo "== BOSL2 OpenSCAD smoke test =="
 openscad -o "$OUT/bosl2.stl" "$ROOT/test/bosl2.scad"

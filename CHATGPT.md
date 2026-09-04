@@ -33,8 +33,20 @@ OpenSCAD   -> BOSL2
 PythonSCAD -> pybosl2
 ```
 
-BOSL2 is installed under `/opt/openscad-libraries/BOSL2` and exposed through
-`OPENSCADPATH`, so consumers should use normal OpenSCAD syntax such as:
+BOSL2 is installed under `/opt/openscad-libraries/BOSL2`.
+
+The toolchain exposes:
+
+```text
+OPENSCADPATH=/opt/openscad-libraries
+BOSL2_ROOT=/opt/openscad-libraries/BOSL2
+```
+
+`OPENSCADPATH` is for normal OpenSCAD library resolution. `BOSL2_ROOT` is the
+explicit filesystem root for PythonSCAD `osuse()`/`osinclude()` and other APIs
+that do not search `OPENSCADPATH`.
+
+Normal OpenSCAD consumers should still use syntax such as:
 
 ```scad
 include <BOSL2/std.scad>
@@ -100,6 +112,31 @@ PythonSCAD -> pybosl2
 
 The last two should use equivalent small geometry so their behavior can be
 compared.
+
+## BOSL2 path resolution rule
+
+Do not assume PythonSCAD `osuse()` searches OpenSCAD's `OPENSCADPATH`.
+
+A failure such as:
+
+```text
+FileNotFoundError: osuse(): file not found: 'BOSL2/shapes3d.scad'
+```
+
+means the SCAD file must be supplied as an actual filesystem path.
+
+Use:
+
+```python
+import os
+from pathlib import Path
+
+bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "shapes3d.scad"
+bosl2 = osuse(str(bosl2_file))
+```
+
+`BOSL2_ROOT` is part of the public toolchain environment and points to the
+pinned BOSL2 installation.
 
 ## PythonSCAD external package path
 
