@@ -40,8 +40,9 @@ BOSL2 is installed under `/opt/openscad-libraries/BOSL2` and exposed through
 include <BOSL2/std.scad>
 ```
 
-`pybosl2` is installed as a separately versioned Python package and exposed
-through `PYTHONPATH`.
+`pybosl2` is installed as a separately versioned Python package under
+`/opt/python-libs`. System Python uses `PYTHONPATH`; PythonSCAD consumers must
+currently add that directory to `sys.path` explicitly.
 
 Do not describe pybosl2 as a wrapper around the installed BOSL2 tree. It is a
 separate Python port with its own release/version.
@@ -99,6 +100,31 @@ PythonSCAD -> pybosl2
 
 The last two should use equivalent small geometry so their behavior can be
 compared.
+
+## PythonSCAD external package path
+
+Python packages that are part of the toolchain are installed under:
+
+```text
+/opt/python-libs
+```
+
+Normal system Python sees that directory through `PYTHONPATH`.
+
+Do **not** assume PythonSCAD will inherit `PYTHONPATH`. PythonSCAD uses an
+embedded CPython runtime; external packages must currently be made visible from
+the design/test script itself:
+
+```python
+import sys
+sys.path.insert(0, "/opt/python-libs")
+```
+
+This follows PythonSCAD's documented pattern for external pip packages.
+
+Consumer tests for PythonSCAD + pybosl2 must include this path setup. A system
+Python import is not sufficient evidence that PythonSCAD can import the same
+package.
 
 ## Python import-shadowing rule
 

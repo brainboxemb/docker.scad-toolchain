@@ -38,9 +38,20 @@ The BOSL2 version is pinned independently in `versions.env`.
 
 ## pybosl2
 
-The Python port is also pinned independently and exposed through `PYTHONPATH`:
+The Python port is also pinned independently and installed under:
+
+```text
+/opt/python-libs
+```
+
+System Python sees this through `PYTHONPATH`. PythonSCAD embeds its own CPython
+runtime and does not reliably inherit that environment path, so PythonSCAD
+consumers must add the shared package directory explicitly:
 
 ```python
+import sys
+sys.path.insert(0, "/opt/python-libs")
+
 from pythonscad import *
 from pybosl2 import cuboid
 
@@ -63,6 +74,27 @@ explicitly rather than relying on an undeclared/transitive dependency.
 The actual geometry smoke test still runs under PythonSCAD. Plain system Python
 only verifies that the installed Python packages and dependencies can be
 imported.
+
+### PythonSCAD external Python packages
+
+PythonSCAD's embedded interpreter does not reliably consume the container
+`PYTHONPATH`. This matches the PythonSCAD documentation, which recommends adding
+the external package directory to `sys.path` when PythonSCAD cannot find a pip
+package.
+
+For packages installed by this toolchain use:
+
+```python
+import sys
+sys.path.insert(0, "/opt/python-libs")
+```
+
+Do this before importing `pybosl2` or another package installed in the shared
+toolchain Python directory.
+
+`PYTHONPATH=/opt/python-libs` remains useful for normal system-Python commands,
+but must not be treated as sufficient proof that PythonSCAD can import the same
+packages.
 
 ### Python module shadowing
 
