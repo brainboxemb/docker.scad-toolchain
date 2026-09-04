@@ -15,6 +15,7 @@ OpenSCAD and PythonSCAD.
 - Xvfb and rendering/font dependencies
 - BOSL2 for OpenSCAD
 - pybosl2 for Python/PythonSCAD experiments
+- Shapely runtime dependency used by pybosl2 path/region code
 
 Inspect the actual image with:
 
@@ -49,6 +50,19 @@ part.show()
 
 BOSL2 and pybosl2 are separate implementations and may have different release
 cadences.
+
+### pybosl2 runtime dependencies
+
+`pybosl2` is installed together with an explicitly pinned Shapely dependency.
+
+With pybosl2 0.6.7 we observed that importing geometry code reaches
+`pybosl2.path2d`, which imports `shapely`, while the pybosl2 package installation
+did not install Shapely automatically. The toolchain therefore pins it
+explicitly rather than relying on an undeclared/transitive dependency.
+
+The actual geometry smoke test still runs under PythonSCAD. Plain system Python
+only verifies that the installed Python packages and dependencies can be
+imported.
 
 ## Version policy
 

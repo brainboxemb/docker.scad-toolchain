@@ -40,6 +40,7 @@ jobs:
           echo "pythonscad=${PYTHONSCAD_VERSION}" >> "$GITHUB_OUTPUT"
           echo "bosl2=${BOSL2_VERSION}" >> "$GITHUB_OUTPUT"
           echo "pybosl2=${PYBOSL2_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "shapely=${SHAPELY_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -70,6 +71,7 @@ jobs:
             PYTHONSCAD_VERSION=${{ steps.versions.outputs.pythonscad }}
             BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
             PYBOSL2_VERSION=${{ steps.versions.outputs.pybosl2 }}
+            SHAPELY_VERSION=${{ steps.versions.outputs.shapely }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

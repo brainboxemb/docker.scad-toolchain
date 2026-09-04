@@ -22,5 +22,9 @@ printf "pybosl2    : "
 PYTHONPATH="${PYTHONPATH:-/opt/python-libs}" \
 python3 -c 'import importlib.metadata as m; print(m.version("pybosl2"))'
 
+printf "Shapely    : "
+PYTHONPATH="${PYTHONPATH:-/opt/python-libs}" \
+python3 -c 'import importlib.metadata as m; print(m.version("shapely"))'
+
 printf "OPENSCADPATH: %s\n" "${OPENSCADPATH:-<unset>}"
 printf "PYTHONPATH : %s\n" "${PYTHONPATH:-<unset>}"

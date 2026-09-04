@@ -4,6 +4,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
 ARG PYBOSL2_VERSION=0.6.7
+ARG SHAPELY_VERSION=2.1.2
 
 LABEL org.opencontainers.image.title="SCAD toolchain"
 LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD + BOSL2 + pybosl2 CI toolchain"
@@ -62,18 +63,23 @@ RUN set -eux; \
 # PYTHONPATH makes the package available to both system Python and, when the
 # embedded runtime honours PYTHONPATH, PythonSCAD. The external consumer test
 # deliberately verifies the PythonSCAD case.
+# pybosl2 0.6.7 imports Shapely from its path/region implementation, but the
+# observed package installation does not install Shapely transitively. Keep
+# that runtime dependency explicit and pinned in this reproducible toolchain.
 RUN python3 -m pip install \
       --no-cache-dir \
       --break-system-packages \
       --target /opt/python-libs \
       "pybosl2==${PYBOSL2_VERSION}" \
+      "shapely==${SHAPELY_VERSION}" \
     && PYTHONPATH=/opt/python-libs python3 -c \
-      'import importlib.metadata as m; assert m.version("pybosl2")'
+      'import importlib.metadata as m; import pybosl2; import shapely; assert m.version("pybosl2"); assert m.version("shapely")'
 
 ENV OPENSCADPATH=/opt/openscad-libraries
 ENV PYTHONPATH=/opt/python-libs
 ENV BOSL2_VERSION=${BOSL2_VERSION}
 ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}
+ENV SHAPELY_VERSION=${SHAPELY_VERSION}
 ENV QT_QPA_PLATFORM=offscreen
 
 COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info

@@ -35,8 +35,8 @@ openscad -o "$OUT/bosl2.stl" "$ROOT/test/bosl2.scad"
 test -s "$OUT/bosl2.stl"
 
 echo
-echo "== pybosl2 system-Python import =="
-python3 -c 'from pybosl2 import cuboid; print("pybosl2 import OK")'
+echo "== pybosl2 Python dependencies =="
+python3 -c 'import pybosl2, shapely; print("pybosl2 + Shapely imports OK")'
 
 echo
 echo "== PythonSCAD smoke test =="

@@ -56,6 +56,7 @@ Current planned v0.2 pins:
 PythonSCAD  1.1.2
 BOSL2       2.0.752
 pybosl2     0.6.7
+Shapely     2.1.2
 ```
 
 OpenSCAD still comes from the official development-snapshot APT repository.
@@ -98,6 +99,26 @@ PythonSCAD -> pybosl2
 
 The last two should use equivalent small geometry so their behavior can be
 compared.
+
+## pybosl2 dependency note
+
+For pybosl2 0.6.7, a real import of its geometry/path stack reaches
+`pybosl2.path2d`, which imports `shapely`. In the tested package installation
+Shapely was not installed automatically.
+
+Therefore the toolchain explicitly pins and installs:
+
+```text
+Shapely 2.1.2
+```
+
+Do not remove this merely because `pip install pybosl2` succeeds. Package
+metadata/version checks are insufficient: keep an import-level dependency smoke
+test, and keep the actual geometry test under PythonSCAD.
+
+System Python is not the target runtime for native pybosl2 geometry. Its smoke
+test should validate dependency availability only. PythonSCAD is responsible
+for proving `cuboid()`/geometry creation works.
 
 ## PythonSCAD status
 
