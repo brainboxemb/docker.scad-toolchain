@@ -100,6 +100,22 @@ PythonSCAD -> pybosl2
 The last two should use equivalent small geometry so their behavior can be
 compared.
 
+## Python import-shadowing rule
+
+Never name a consumer/test script `pybosl2.py`.
+
+Python adds the script directory to `sys.path`, so a local `pybosl2.py` shadows
+the installed package. An import such as:
+
+```python
+from pybosl2 import cuboid
+```
+
+then imports the test file itself and fails with a partially initialized /
+circular import error.
+
+Use descriptive names such as `pybosl2_smoke.py` instead.
+
 ## pybosl2 dependency note
 
 For pybosl2 0.6.7, a real import of its geometry/path stack reaches

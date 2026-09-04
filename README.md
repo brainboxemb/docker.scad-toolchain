@@ -64,6 +64,19 @@ The actual geometry smoke test still runs under PythonSCAD. Plain system Python
 only verifies that the installed Python packages and dependencies can be
 imported.
 
+### Python module shadowing
+
+Consumer/test files must not be named `pybosl2.py`. Python places the script
+directory on its import path, so a local file with that name shadows the
+installed `pybosl2` package and causes a circular/partially-initialized import.
+
+Use names such as:
+
+```text
+pybosl2_smoke.py
+pybosl2_consumer.py
+```
+
 ## Version policy
 
 The project is still in the experimental `0.x` line.

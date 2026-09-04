@@ -47,7 +47,7 @@ echo "== PythonSCAD + pybosl2 smoke test =="
 xvfb-run -a pythonscad \
   --trust-python \
   -o "$OUT/pybosl2.stl" \
-  "$ROOT/test/pybosl2.py"
+  "$ROOT/test/pybosl2_smoke.py"
 test -s "$OUT/pybosl2.stl"
 
 echo
