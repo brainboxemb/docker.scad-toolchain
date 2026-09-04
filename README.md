@@ -61,7 +61,7 @@ from pathlib import Path
 
 from pythonscad import *
 
-bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "shapes3d.scad"
+bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "std.scad"
 bosl2 = osuse(str(bosl2_file))
 ```
 
@@ -221,3 +221,19 @@ git push origin v0.2.0
 
 The build workflow publishes the corresponding GHCR image and runs the internal
 smoke tests.
+
+
+## BOSL2 library entrypoint
+
+Use `std.scad` as the normal BOSL2 entrypoint.
+
+```text
+OpenSCAD
+    include <BOSL2/std.scad>
+
+PythonSCAD
+    osuse(BOSL2_ROOT / "std.scad")
+```
+
+Do not use a component file such as `shapes3d.scad` as a shortcut entrypoint;
+those files depend on constants and support modules loaded by `std.scad`.

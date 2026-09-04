@@ -131,7 +131,7 @@ Use:
 import os
 from pathlib import Path
 
-bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "shapes3d.scad"
+bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "std.scad"
 bosl2 = osuse(str(bosl2_file))
 ```
 
@@ -223,3 +223,20 @@ Before changing consumers:
 
 Keep internal smoke tests small. Broader behavior/interoperability belongs in
 the external consumer test repository.
+
+
+## BOSL2 entrypoint rule
+
+Use `std.scad` as the BOSL2 library entrypoint in both OpenSCAD and PythonSCAD
+tests.
+
+```text
+OpenSCAD
+    include <BOSL2/std.scad>
+
+PythonSCAD
+    osuse(BOSL2_ROOT/std.scad)
+```
+
+Do not directly load `shapes3d.scad`; it assumes the standard BOSL2 environment
+created by `std.scad`.
