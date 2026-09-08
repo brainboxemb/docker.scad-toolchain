@@ -309,3 +309,22 @@ before any `Module`, `Function`, `Constant`, `Section`, etc. block.
 The internal smoke source `test/docsgen.scad` intentionally verifies this
 minimal valid structure.
 
+
+### Docsgen smoke output
+
+The internal toolchain smoke test invokes `openscad-docsgen` directly on
+`test/docsgen.scad`.
+
+For the pinned docsgen version, the file-level `-m` smoke invocation produces:
+
+```text
+test/docsgen.scad.md
+```
+
+next to the source. The smoke test therefore verifies that exact generated
+file is non-empty and contains the documented module name, then removes it.
+
+Do not infer docsgen success from a custom `find` of an assumed output
+directory. The test should validate the output that the invoked command
+actually creates.
+
