@@ -287,3 +287,25 @@ support modules loaded by `std.scad`.
 The external toolchain test currently records direct
 `PythonSCAD -> BOSL2 .scad` as an XFAIL because BOSL2 relies on OpenSCAD's
 date-based `version_num()` runtime semantics.
+
+
+### Docsgen file-header requirement
+
+Every `.scad` source parsed by `openscad-docsgen` must start its structured
+documentation with exactly one of:
+
+```scad
+// File: filename.scad
+```
+
+or:
+
+```scad
+// LibFile: filename.scad
+```
+
+before any `Module`, `Function`, `Constant`, `Section`, etc. block.
+
+The internal smoke source `test/docsgen.scad` intentionally verifies this
+minimal valid structure.
+

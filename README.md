@@ -253,6 +253,9 @@ openscad-mdimggen
 Use the upstream docsgen comment format for structured OpenSCAD API/source
 comments instead of introducing a project-specific API-comment syntax.
 
+A parsed `.scad` file must declare a top-level `// File:` or `// LibFile:`
+block before documenting modules/functions/constants.
+
 Typical validation:
 
 ```bash
