@@ -240,3 +240,50 @@ PythonSCAD
 
 Do not directly load `shapes3d.scad`; it assumes the standard BOSL2 environment
 created by `std.scad`.
+
+
+## OpenSCAD documentation tooling
+
+Toolchain `v0.3.0` includes the pinned PyPI package `openscad_docsgen`.
+
+Public commands:
+
+```text
+openscad-docsgen
+openscad-mdimggen
+```
+
+When `.scad` files contain structured API/source comments, prefer upstream
+`openscad_docsgen` syntax.
+
+Keep API/reference documentation and design documentation separate:
+
+```text
+docsgen comments -> API/source reference
+design.md        -> design intent and visual construction
+```
+
+Internal smoke coverage must prove:
+- both commands exist;
+- docsgen test/lint mode parses a real `.scad` file;
+- normal docsgen execution produces Markdown.
+
+
+## BOSL2 / PythonSCAD compatibility note
+
+Keep the BOSL2 entrypoint rule explicit:
+
+```text
+OpenSCAD:
+    include <BOSL2/std.scad>
+
+PythonSCAD osuse() experiments:
+    BOSL2_ROOT/std.scad
+```
+
+Never use `shapes3d.scad` as the BOSL2 entrypoint. It relies on constants and
+support modules loaded by `std.scad`.
+
+The external toolchain test currently records direct
+`PythonSCAD -> BOSL2 .scad` as an XFAIL because BOSL2 relies on OpenSCAD's
+date-based `version_num()` runtime semantics.

@@ -237,3 +237,43 @@ PythonSCAD
 
 Do not use a component file such as `shapes3d.scad` as a shortcut entrypoint;
 those files depend on constants and support modules loaded by `std.scad`.
+
+
+## OpenSCAD documentation tooling
+
+Toolchain `v0.3.0` adds the pinned `openscad_docsgen` package.
+
+Public commands:
+
+```text
+openscad-docsgen
+openscad-mdimggen
+```
+
+Use the upstream docsgen comment format for structured OpenSCAD API/source
+comments instead of introducing a project-specific API-comment syntax.
+
+Typical validation:
+
+```bash
+openscad-docsgen -m -T component.scad
+```
+
+Typical Markdown generation:
+
+```bash
+openscad-docsgen -D docs -m component.scad
+```
+
+This complements, rather than replaces, project `design.md` documentation:
+
+```text
+.scad docsgen comments
+    API / source reference
+
+design.md
+    design intent, construction steps and visual explanation
+```
+
+The package version is pinned through `OPENSCAD_DOCSGEN_VERSION` in
+`versions.env`.

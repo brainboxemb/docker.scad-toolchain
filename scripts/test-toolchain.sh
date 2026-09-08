@@ -58,5 +58,28 @@ xvfb-run -a pythonscad \
   "$ROOT/test/pybosl2_smoke.py"
 test -s "$OUT/pybosl2.stl"
 
+
+echo
+echo "== OpenSCAD docsgen smoke test =="
+command -v openscad-docsgen >/dev/null
+command -v openscad-mdimggen >/dev/null
+
+DOCSGEN_OUT="$OUT/docsgen"
+mkdir -p "$DOCSGEN_OUT"
+
+openscad-docsgen \
+  -D "$DOCSGEN_OUT" \
+  -m \
+  -T \
+  "$ROOT/test/docsgen.scad"
+
+openscad-docsgen \
+  -D "$DOCSGEN_OUT" \
+  -m \
+  "$ROOT/test/docsgen.scad"
+
+find "$DOCSGEN_OUT" -type f -name '*.md' -print -quit | grep -q .
+echo "openscad-docsgen parse + generation OK"
+
 echo
 echo "Smoke test passed."
