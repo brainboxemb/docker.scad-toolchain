@@ -74,8 +74,9 @@ RUN python3 -m pip install \
       --target /opt/python-libs \
       "pybosl2==${PYBOSL2_VERSION}" \
       "shapely==${SHAPELY_VERSION}" \
+      "pillow==${PILLOW_VERSION}" \
     && PYTHONPATH=/opt/python-libs python3 -c \
-      'import importlib.metadata as m; import pybosl2; import shapely; assert m.version("pybosl2"); assert m.version("shapely")'
+      'import importlib.metadata as m; import pybosl2; import shapely; from PIL import Image; assert m.version("pybosl2"); assert m.version("shapely"); assert m.version("Pillow"); assert Image'
 
 
 # OpenSCAD source/API documentation tooling.
