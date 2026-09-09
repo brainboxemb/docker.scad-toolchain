@@ -1,4 +1,4 @@
-name: Release SCAD toolchain
+name: Release
 
 on:
   workflow_dispatch:

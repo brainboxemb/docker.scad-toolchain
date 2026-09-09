@@ -1,4 +1,4 @@
-name: Build SCAD toolchain
+name: Build
 
 on:
   push:
