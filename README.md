@@ -311,9 +311,22 @@ Only after the permanent tagged verification report is green should downstream
 consumers such as `tool.scad-project` be advanced to the new toolchain
 release.
 
-Example toolchain release tag:
+Create releases through the permanent GitHub Actions workflow:
 
-```bash
-git tag -a v0.4.0 -m "SCAD toolchain v0.4.0"
-git push origin v0.4.0
+```text
+Actions -> Release SCAD toolchain -> Run workflow
 ```
+
+Provide:
+
+```text
+version
+    e.g. v0.4.0
+
+release_sha
+    exact already-verified commit SHA
+```
+
+The release workflow creates the annotated tag and then explicitly starts the
+normal build workflow on that tag. The normal build workflow remains
+authoritative for publishing and verification.
