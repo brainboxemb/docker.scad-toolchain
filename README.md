@@ -242,15 +242,44 @@ code, and PythonSCAD using pybosl2.
 
 ## Release
 
-Commit the intended contents to `main`, then create a new immutable tag:
+A release is complete only after both the runtime image and its external
+consumer evidence have been made immutable.
+
+For `v0.4.0` use this sequence:
+
+```text
+main -> :edge
+  -> internal smoke PASS
+  -> docker.scad-toolchain.test against :edge PASS
+
+tag docker.scad-toolchain v0.4.0
+  -> publish :v0.4.0
+  -> internal smoke PASS
+  -> automatic docker.scad-toolchain.test against :v0.4.0 PASS
+
+tag docker.scad-toolchain.test test-v0.4.0-toolchain-v0.4.0
+  -> external suite against :v0.4.0 PASS
+  -> permanent GitHub Pages report:
+     /test-v0.4.0-toolchain-v0.4.0/
+```
+
+The automatic test immediately after the toolchain tag publishes to the mutable
+`/latest/` report. The matching test-suite tag is a separate, required release
+step because it creates the permanent historical verification report.
+
+Only after that permanent tagged report is green should downstream consumers be
+moved to `v0.4.0`.
+
+Create the immutable toolchain tag with:
 
 ```bash
 git tag -a v0.4.0 -m "SCAD toolchain v0.4.0"
 git push origin v0.4.0
 ```
 
-The build workflow publishes the corresponding GHCR image and runs the internal
-smoke tests.
+Released Git tags, GHCR image tags and released test-suite tags are immutable.
+If a released version later needs a runtime fix, publish a patch release such
+as `v0.4.1`; never move an existing release tag.
 
 
 ## BOSL2 library entrypoint

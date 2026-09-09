@@ -86,6 +86,53 @@ Released image tags are immutable. Never rebuild/re-push an existing released
 version with changed contents. Adding BOSL2/pybosl2 is a meaningful toolchain
 capability change, so it belongs in the v0.2 line rather than replacing v0.1.2.
 
+## Mandatory release sequence
+
+A toolchain version is released through a **two-repository verification chain**.
+Do not skip or reorder these gates.
+
+For a release such as `v0.4.0`:
+
+```text
+1. docker.scad-toolchain main
+   -> publish :edge
+   -> internal smoke test must pass
+
+2. automatic docker.scad-toolchain.test dispatch
+   -> test toolchain_version=edge
+   -> external consumer suite must pass
+
+3. create immutable Git tag v0.4.0 in docker.scad-toolchain
+   -> workflow publishes image :v0.4.0
+   -> internal smoke test must pass against the published tagged image
+
+4. automatic docker.scad-toolchain.test dispatch
+   -> test toolchain_version=v0.4.0
+   -> external consumer suite must pass against the immutable tagged image
+   -> this workflow_dispatch result is published under mutable Pages /latest/
+
+5. only after step 4 is green, create the immutable test-suite tag
+   test-v0.4.0-toolchain-v0.4.0 in docker.scad-toolchain.test
+
+6. the test-suite tag runs again against image :v0.4.0
+   -> it must pass
+   -> it publishes the permanent Pages evidence under:
+      /test-v0.4.0-toolchain-v0.4.0/
+
+7. only after the tagged test-suite run and permanent Pages publication are
+   green should downstream repositories such as tool.scad-project be advanced
+   to the new toolchain release
+```
+
+The `:edge` consumer test proves the release candidate. The automatic
+`v0.4.0` consumer test proves the immutable image that was actually published.
+The test-suite tag preserves that proof as permanent historical Pages evidence.
+
+**Do not call a toolchain release fully verified merely because the Docker tag
+exists or because `:edge` passed.** The immutable toolchain tag must pass the
+external consumer suite, and its matching released test-suite report must be
+published.
+
 ## Lightweight image post-processing
 
 Toolchain v0.4.0 adds the public `scad-image-watermark` command.
