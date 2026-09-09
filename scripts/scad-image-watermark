@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""Add a small copyright/watermark label to a PNG image."""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+from pathlib import Path
+
+from PIL import Image, ImageDraw, ImageFont
+
+
+FONT_CANDIDATES = (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+)
+
+
+def load_font(point_size: int, configured: str | None) -> ImageFont.ImageFont:
+    candidates = [configured] if configured else []
+    candidates.extend(FONT_CANDIDATES)
+
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.is_file():
+            return ImageFont.truetype(str(path), point_size)
+
+    return ImageFont.load_default()
+
+
+def add_watermark(
+    input_path: Path,
+    output_path: Path,
+    text: str,
+    *,
+    font_path: str | None = None,
+    point_size: int | None = None,
+) -> None:
+    if not input_path.is_file():
+        raise SystemExit(f"Input image does not exist: {input_path}")
+
+    if input_path.resolve() == output_path.resolve():
+        raise SystemExit("Input and output paths must be different.")
+
+    if not text.strip():
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(input_path, output_path)
+        return
+
+    image = Image.open(input_path).convert("RGBA")
+
+    size = point_size or max(18, round(image.width * 0.012))
+    margin_x = max(18, round(image.width * 0.011))
+    margin_y = max(14, round(image.height * 0.015))
+    padding_x = max(9, round(size * 0.40))
+    padding_y = max(5, round(size * 0.23))
+
+    font = load_font(size, font_path)
+
+    overlay = Image.new("RGBA", image.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+
+    box_width = text_width + 2 * padding_x
+    box_height = text_height + 2 * padding_y
+
+    left = max(0, image.width - margin_x - box_width)
+    top = max(0, image.height - margin_y - box_height)
+    right = image.width - margin_x
+    bottom = image.height - margin_y
+
+    draw.rounded_rectangle(
+        (left, top, right, bottom),
+        radius=max(4, padding_y),
+        fill=(255, 255, 255, 150),
+    )
+    draw.text(
+        (left + padding_x - bbox[0], top + padding_y - bbox[1]),
+        text,
+        font=font,
+        fill=(30, 30, 30, 190),
+    )
+
+    result = Image.alpha_composite(image, overlay)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    result.save(output_path, format="PNG", optimize=True)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Add a subtle bottom-right watermark to a PNG image."
+    )
+    parser.add_argument("input", type=Path, help="Input PNG")
+    parser.add_argument("output", type=Path, help="Output PNG")
+    parser.add_argument("--text", required=True, help="Watermark text")
+    parser.add_argument("--font", help="Optional TrueType/OpenType font path")
+    parser.add_argument("--point-size", type=int, help="Optional fixed font size")
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    if args.point_size is not None and args.point_size <= 0:
+        raise SystemExit("--point-size must be > 0")
+
+    add_watermark(
+        args.input,
+        args.output,
+        args.text,
+        font_path=args.font,
+        point_size=args.point_size,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
