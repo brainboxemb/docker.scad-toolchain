@@ -19,6 +19,7 @@ pythonscad
 python3
 git
 scad-toolchain-info
+scad-image-watermark
 ```
 
 Do not make consumers depend on the internal AppImage path or other Docker
@@ -70,6 +71,7 @@ PythonSCAD  1.1.2
 BOSL2       2.0.752
 pybosl2     0.6.7
 Shapely     2.1.2
+Pillow       12.3.0
 ```
 
 OpenSCAD still comes from the official development-snapshot APT repository.
@@ -83,6 +85,30 @@ The `0.x` line is experimental and uses semantic-style versioning.
 Released image tags are immutable. Never rebuild/re-push an existing released
 version with changed contents. Adding BOSL2/pybosl2 is a meaningful toolchain
 capability change, so it belongs in the v0.2 line rather than replacing v0.1.2.
+
+## Lightweight image post-processing
+
+Toolchain v0.4.0 adds the public `scad-image-watermark` command.
+
+Keep this capability narrow:
+
+```text
+Docker image
+    generic PNG watermark operation
+
+tool.scad-project
+    decides when to call it and reads project configuration
+
+consumer project
+    supplies watermark text/policy
+```
+
+The implementation uses pinned Pillow rather than adding a broad/heavy graphics
+suite. Preserve the existing subtle bottom-right label behavior unless a
+separate requirement justifies expanding the public CLI.
+
+The external toolchain test must render a real PNG and pass it through the
+public command. Command existence alone is not sufficient evidence.
 
 ## Toolchain repository vs external test repository
 
