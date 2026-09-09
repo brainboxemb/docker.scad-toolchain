@@ -110,6 +110,36 @@ separate requirement justifies expanding the public CLI.
 The external toolchain test must render a real PNG and pass it through the
 public command. Command existence alone is not sufficient evidence.
 
+## Automatic external consumer trigger
+
+After a successful published-image smoke test, the build workflow dispatches
+`docker.scad-toolchain.test/.github/workflows/test.yml`.
+
+Version selection is deliberate:
+
+```text
+main build
+    -> test toolchain_version=edge
+
+v* tag build
+    -> test the same immutable v* toolchain version
+```
+
+The cross-repository dispatch uses the repository secret:
+
+```text
+SCAD_TOOLCHAIN_TEST_TOKEN
+```
+
+That fine-grained token should remain limited to the
+`docker.scad-toolchain.test` repository with only GitHub Actions read/write
+permission. It is a workflow-trigger credential, not a contents-write
+credential.
+
+Keep the external test repository independently runnable through its own push
+and workflow_dispatch triggers; the producer-side trigger is an orchestration
+link, not a code dependency.
+
 ## Toolchain repository vs external test repository
 
 Responsibilities are deliberately separate:
