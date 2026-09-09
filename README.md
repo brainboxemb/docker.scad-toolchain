@@ -16,12 +16,35 @@ OpenSCAD and PythonSCAD.
 - BOSL2 for OpenSCAD
 - pybosl2 for Python/PythonSCAD experiments
 - Shapely runtime dependency used by pybosl2 path/region code
+- Pillow for lightweight PNG post-processing
+- `scad-image-watermark` for adding a small copyright/watermark label to PNG renders
 
 Inspect the actual image with:
 
 ```bash
 scad-toolchain-info
 ```
+
+## Image watermark tooling
+
+Toolchain v0.4.0 adds one deliberately small image-processing capability:
+
+```text
+scad-image-watermark
+```
+
+It uses the pinned Pillow package and the fonts already present in the rendering
+environment. The tool only adds a subtle bottom-right label; it is not intended
+to turn the SCAD runtime into a general graphics-processing image.
+
+Example:
+
+```bash
+scad-image-watermark input.png output.png --text "© 2026 brainboxemb"
+```
+
+The consuming project/workflow decides whether watermarking is enabled and what
+text is used. The Docker image only supplies the generic operation.
 
 ## BOSL2
 
@@ -148,14 +171,14 @@ The project is still in the experimental `0.x` line.
 Released tags are immutable. Never replace an existing image tag with different
 contents.
 
-The BOSL2/pybosl2 capability is a meaningful toolchain extension and is planned
-for:
+The current development line is:
 
 ```text
-v0.2.0
+v0.4.0
 ```
 
-Current pins are stored in `versions.env`.
+It adds lightweight PNG watermark post-processing on top of the v0.3.0
+documentation-tooling capability. Current pins are stored in `versions.env`.
 
 ## Container image
 
@@ -168,7 +191,7 @@ ghcr.io/brainboxemb/scad-toolchain
 Use a version tag for reproducible consumer workflows:
 
 ```text
-ghcr.io/brainboxemb/scad-toolchain:v0.2.0
+ghcr.io/brainboxemb/scad-toolchain:v0.4.0
 ```
 
 `edge` is only the current `main` build and should not be used as an immutable
@@ -181,7 +204,14 @@ set -a
 source versions.env
 set +a
 
-docker build   --build-arg PYTHONSCAD_VERSION="$PYTHONSCAD_VERSION"   --build-arg BOSL2_VERSION="$BOSL2_VERSION"   --build-arg PYBOSL2_VERSION="$PYBOSL2_VERSION"   -t scad-toolchain:local .
+docker build \
+  --build-arg PYTHONSCAD_VERSION="$PYTHONSCAD_VERSION" \
+  --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
+  --build-arg PYBOSL2_VERSION="$PYBOSL2_VERSION" \
+  --build-arg SHAPELY_VERSION="$SHAPELY_VERSION" \
+  --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
+  --build-arg PILLOW_VERSION="$PILLOW_VERSION" \
+  -t scad-toolchain:local .
 ```
 
 Run the internal smoke test:
@@ -215,8 +245,8 @@ code, and PythonSCAD using pybosl2.
 Commit the intended contents to `main`, then create a new immutable tag:
 
 ```bash
-git tag -a v0.2.0 -m "SCAD toolchain v0.2.0"
-git push origin v0.2.0
+git tag -a v0.4.0 -m "SCAD toolchain v0.4.0"
+git push origin v0.4.0
 ```
 
 The build workflow publishes the corresponding GHCR image and runs the internal
