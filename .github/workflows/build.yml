@@ -89,3 +89,33 @@ jobs:
             -v "$PWD:/work" \
             "$IMAGE" \
             bash /work/scripts/test-toolchain.sh
+
+      - name: Trigger external consumer tests
+        shell: bash
+        env:
+          SCAD_TOOLCHAIN_TEST_TOKEN: ${{ secrets.SCAD_TOOLCHAIN_TEST_TOKEN }}
+          TARGET_REPOSITORY: brainboxemb/docker.scad-toolchain.test
+          TARGET_WORKFLOW: test.yml
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            TOOLCHAIN_VERSION="${GITHUB_REF_NAME}"
+          else
+            TOOLCHAIN_VERSION="edge"
+          fi
+
+          PAYLOAD="$(jq -nc \
+            --arg ref "main" \
+            --arg version "$TOOLCHAIN_VERSION" \
+            '{ref: $ref, inputs: {toolchain_version: $version}}')"
+
+          curl --fail-with-body --silent --show-error --location \
+            --request POST \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${SCAD_TOOLCHAIN_TEST_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${TARGET_REPOSITORY}/actions/workflows/${TARGET_WORKFLOW}/dispatches" \
+            --data "$PAYLOAD"
+
+          echo "Triggered ${TARGET_REPOSITORY}/${TARGET_WORKFLOW} for toolchain ${TOOLCHAIN_VERSION}."
