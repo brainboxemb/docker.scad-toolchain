@@ -6,6 +6,7 @@ ARG BOSL2_VERSION=2.0.752
 ARG PYBOSL2_VERSION=0.6.7
 ARG SHAPELY_VERSION=2.1.2
 ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
+ARG PILLOW_VERSION=12.3.0
 
 LABEL org.opencontainers.image.title="SCAD toolchain"
 LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD + BOSL2 + pybosl2 CI toolchain"
@@ -92,10 +93,12 @@ ENV BOSL2_VERSION=${BOSL2_VERSION}
 ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}
 ENV SHAPELY_VERSION=${SHAPELY_VERSION}
 ENV OPENSCAD_DOCSGEN_VERSION=${OPENSCAD_DOCSGEN_VERSION}
+ENV PILLOW_VERSION=${PILLOW_VERSION}
 ENV QT_QPA_PLATFORM=offscreen
 
 COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info
-RUN chmod +x /usr/local/bin/scad-toolchain-info
+COPY scripts/scad-image-watermark /usr/local/bin/scad-image-watermark
+RUN chmod +x /usr/local/bin/scad-toolchain-info /usr/local/bin/scad-image-watermark
 
 WORKDIR /work
 
