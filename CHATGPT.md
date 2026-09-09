@@ -137,56 +137,52 @@ exists or because `:edge` passed.** The immutable toolchain tag must pass the
 external consumer suite, and its matching released test-suite report must be
 published.
 
-## Creating release tags from ChatGPT / connected GitHub
+## Release workflow for ChatGPT / connected GitHub
 
-The connected GitHub tool may expose commit/branch operations without exposing a
-direct create-tag operation. In that situation, do **not** ask the user to tag
-manually if the repository can safely create the tag through GitHub Actions.
-
-Use the proven one-shot workflow pattern.
-
-For a release such as `v0.4.0`:
+Use the permanent workflow:
 
 ```text
-1. determine the exact already-tested release commit SHA
-2. create a temporary workflow on main:
-   .github/workflows/_release-v0.4.0.yml
-3. give that workflow:
-   permissions:
-     contents: write
-4. have the workflow create an annotated tag on the explicit release SHA:
-   git tag -a v0.4.0 "$RELEASE_SHA" -m "SCAD toolchain v0.4.0"
-   git push origin refs/tags/v0.4.0
-5. after pushing the tag, explicitly dispatch the normal build workflow on
-   the new tag ref, for example build.yml with ref=v0.4.0
-6. wait for the one-shot workflow to finish successfully
-7. verify refs/tags/v0.4.0 exists and points to the intended release commit
-8. verify the dispatched build runs with github.ref_type=tag and publishes the
-   immutable :v0.4.0 image
-9. immediately remove the temporary one-shot workflow from main
-10. continue with the normal immutable-image and external-consumer release gates
+.github/workflows/release.yml
 ```
 
-Important safeguards:
+Do not recreate temporary one-shot release workflows for normal releases.
 
-- `RELEASE_SHA` must be the exact commit that already passed the intended
-  `:edge` release-candidate verification.
-- Never tag the temporary workflow commit itself unless that is intentionally
-  the release content.
-- Never use a branch named like a version as a substitute for a Git tag.
-- Never move or overwrite an existing release tag.
-- Remove the one-shot workflow after it has created the tag; it is release
-  tooling, not permanent project infrastructure.
-- A tag pushed with the repository `GITHUB_TOKEN` does not automatically
-  trigger another workflow from the resulting push. The one-shot workflow must
-  therefore explicitly dispatch the normal `build.yml` on the new tag ref.
-- The dispatched normal `build.yml` remains authoritative for publishing and
-  verifying the released image; do not duplicate Docker build logic in the
-  one-shot workflow.
+The workflow is started through `workflow_dispatch` and requires:
 
-This same pattern was previously used successfully for
-`tool.scad-project:v0.5.0` and is the preferred fallback when direct tag
-creation is unavailable through the connected GitHub interface.
+```text
+version
+    immutable tag, for example v0.5.0
+
+release_sha
+    exact already-verified commit SHA to tag
+```
+
+The workflow deliberately:
+
+1. validates the semantic version;
+2. verifies the commit exists;
+3. refuses to overwrite an existing tag;
+4. checks that `versions.env` declares the same toolchain version;
+5. creates an annotated immutable Git tag on the explicit release SHA;
+6. explicitly dispatches `.github/workflows/build.yml` on that tag.
+
+The explicit dispatch is required because GitHub does not create ordinary
+follow-up workflow runs from pushes performed with the repository
+`GITHUB_TOKEN`. `workflow_dispatch` is the intended exception.
+
+After the release workflow runs:
+
+- verify the tag exists and points to the intended commit;
+- require the normal tagged `build.yml` run to pass;
+- require the automatically triggered external
+  `docker.scad-toolchain.test` run against the same immutable toolchain version
+  to pass;
+- then release the matching immutable test-suite tag through that repository's
+  own permanent release workflow.
+
+The normal build workflow remains authoritative for building, publishing and
+testing the image. The release workflow only creates the immutable ref and
+starts that authoritative workflow.
 
 ## Lightweight image post-processing
 
