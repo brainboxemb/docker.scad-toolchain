@@ -277,6 +277,10 @@ v0.4.0
 
 Dependency pins for a release are defined in `versions.env`.
 
+Release history and the functional changes per version are recorded in
+[`CHANGELOG.md`](CHANGELOG.md). Keep historical version detail there rather
+than spreading it through the capability sections of this README.
+
 Released Git tags and GHCR image tags are immutable. Never replace an existing
 release tag with different contents. If a released version needs a fix, create a
 patch release such as `v0.4.1`.

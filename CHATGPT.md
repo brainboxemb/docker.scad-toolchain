@@ -91,6 +91,10 @@ capability change, so it belongs in the v0.2 line rather than replacing v0.1.2.
 A toolchain version is released through a **two-repository verification chain**.
 Do not skip or reorder these gates.
 
+Before starting the immutable release steps, update `CHANGELOG.md` with the
+new release line. Keep historical version information there; do not reintroduce
+version-by-version history throughout `README.md`.
+
 For a release such as `v0.4.0`:
 
 ```text
