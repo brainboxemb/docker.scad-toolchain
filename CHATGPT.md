@@ -137,6 +137,50 @@ exists or because `:edge` passed.** The immutable toolchain tag must pass the
 external consumer suite, and its matching released test-suite report must be
 published.
 
+## Creating release tags from ChatGPT / connected GitHub
+
+The connected GitHub tool may expose commit/branch operations without exposing a
+direct create-tag operation. In that situation, do **not** ask the user to tag
+manually if the repository can safely create the tag through GitHub Actions.
+
+Use the proven one-shot workflow pattern.
+
+For a release such as `v0.4.0`:
+
+```text
+1. determine the exact already-tested release commit SHA
+2. create a temporary workflow on main:
+   .github/workflows/_release-v0.4.0.yml
+3. give that workflow:
+   permissions:
+     contents: write
+4. have the workflow create an annotated tag on the explicit release SHA:
+   git tag -a v0.4.0 "$RELEASE_SHA" -m "SCAD toolchain v0.4.0"
+   git push origin refs/tags/v0.4.0
+5. wait for the one-shot workflow to finish successfully
+6. verify refs/tags/v0.4.0 exists and points to the intended release commit
+7. verify the normal tag-triggered toolchain build starts
+8. immediately remove the temporary one-shot workflow from main
+9. continue with the normal immutable-image and external-consumer release gates
+```
+
+Important safeguards:
+
+- `RELEASE_SHA` must be the exact commit that already passed the intended
+  `:edge` release-candidate verification.
+- Never tag the temporary workflow commit itself unless that is intentionally
+  the release content.
+- Never use a branch named like a version as a substitute for a Git tag.
+- Never move or overwrite an existing release tag.
+- Remove the one-shot workflow after it has created the tag; it is release
+  tooling, not permanent project infrastructure.
+- After tag creation, the normal `build.yml` tag path remains authoritative
+  for publishing and verifying the released image.
+
+This same pattern was previously used successfully for
+`tool.scad-project:v0.5.0` and is the preferred fallback when direct tag
+creation is unavailable through the connected GitHub interface.
+
 ## Lightweight image post-processing
 
 Toolchain v0.4.0 adds the public `scad-image-watermark` command.
