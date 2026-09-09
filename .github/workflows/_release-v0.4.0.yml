@@ -1,0 +1,33 @@
+name: One-shot release tag v0.4.0
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create v0.4.0 tag on release commit
+        env:
+          RELEASE_SHA: ea56a85ce55149cea012ce6dc1960a83f49465a1
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          if git rev-parse -q --verify refs/tags/v0.4.0 >/dev/null; then
+            echo "v0.4.0 already exists"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a v0.4.0 "$RELEASE_SHA" -m "SCAD toolchain v0.4.0"
+          git push origin refs/tags/v0.4.0
