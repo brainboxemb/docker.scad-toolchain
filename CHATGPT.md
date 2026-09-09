@@ -157,11 +157,14 @@ For a release such as `v0.4.0`:
 4. have the workflow create an annotated tag on the explicit release SHA:
    git tag -a v0.4.0 "$RELEASE_SHA" -m "SCAD toolchain v0.4.0"
    git push origin refs/tags/v0.4.0
-5. wait for the one-shot workflow to finish successfully
-6. verify refs/tags/v0.4.0 exists and points to the intended release commit
-7. verify the normal tag-triggered toolchain build starts
-8. immediately remove the temporary one-shot workflow from main
-9. continue with the normal immutable-image and external-consumer release gates
+5. after pushing the tag, explicitly dispatch the normal build workflow on
+   the new tag ref, for example build.yml with ref=v0.4.0
+6. wait for the one-shot workflow to finish successfully
+7. verify refs/tags/v0.4.0 exists and points to the intended release commit
+8. verify the dispatched build runs with github.ref_type=tag and publishes the
+   immutable :v0.4.0 image
+9. immediately remove the temporary one-shot workflow from main
+10. continue with the normal immutable-image and external-consumer release gates
 ```
 
 Important safeguards:
@@ -174,8 +177,12 @@ Important safeguards:
 - Never move or overwrite an existing release tag.
 - Remove the one-shot workflow after it has created the tag; it is release
   tooling, not permanent project infrastructure.
-- After tag creation, the normal `build.yml` tag path remains authoritative
-  for publishing and verifying the released image.
+- A tag pushed with the repository `GITHUB_TOKEN` does not automatically
+  trigger another workflow from the resulting push. The one-shot workflow must
+  therefore explicitly dispatch the normal `build.yml` on the new tag ref.
+- The dispatched normal `build.yml` remains authoritative for publishing and
+  verifying the released image; do not duplicate Docker build logic in the
+  one-shot workflow.
 
 This same pattern was previously used successfully for
 `tool.scad-project:v0.5.0` and is the preferred fallback when direct tag
