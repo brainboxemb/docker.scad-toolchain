@@ -29,6 +29,38 @@ echo "== OpenSCAD smoke test =="
 openscad -o "$OUT/smoke.stl" "$ROOT/test/smoke.scad"
 test -s "$OUT/smoke.stl"
 
+echo
+echo "== Image watermark smoke test =="
+command -v scad-image-watermark >/dev/null
+xvfb-run -a openscad \
+  --render \
+  --imgsize=640,480 \
+  -o "$OUT/watermark-input.png" \
+  "$ROOT/test/smoke.scad"
+test -s "$OUT/watermark-input.png"
+
+scad-image-watermark \
+  "$OUT/watermark-input.png" \
+  "$OUT/watermark-output.png" \
+  --text "© 2026 brainboxemb"
+
+test -s "$OUT/watermark-output.png"
+if cmp -s "$OUT/watermark-input.png" "$OUT/watermark-output.png"; then
+  echo "ERROR: watermark output is identical to its input." >&2
+  exit 1
+fi
+
+python3 - "$OUT/watermark-output.png" <<'PY'
+from pathlib import Path
+import sys
+from PIL import Image
+
+path = Path(sys.argv[1])
+with Image.open(path) as image:
+    assert image.format == "PNG"
+    assert image.size == (640, 480)
+print("watermark PNG validated")
+PY
 
 echo
 echo "== BOSL2_ROOT public path =="
