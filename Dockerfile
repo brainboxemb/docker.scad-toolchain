@@ -7,6 +7,7 @@ ARG PYBOSL2_VERSION=0.6.7
 ARG SHAPELY_VERSION=2.1.2
 ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
+ARG SCONS_VERSION=4.11.1
 
 LABEL org.opencontainers.image.title="SCAD toolchain"
 LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD + BOSL2 + pybosl2 CI toolchain"
@@ -78,14 +79,15 @@ RUN python3 -m pip install \
     && PYTHONPATH=/opt/python-libs python3 -c \
       'import importlib.metadata as m; import pybosl2; import shapely; from PIL import Image; assert m.version("pybosl2"); assert m.version("shapely"); assert m.version("Pillow"); assert Image'
 
-
-# OpenSCAD source/API documentation tooling.
+# Generic project-build and OpenSCAD source/API documentation tooling.
 RUN python3 -m pip install \
       --no-cache-dir \
       --break-system-packages \
       "openscad_docsgen==${OPENSCAD_DOCSGEN_VERSION}" \
+      "SCons==${SCONS_VERSION}" \
     && openscad-docsgen --help >/dev/null \
-    && openscad-mdimggen --help >/dev/null
+    && openscad-mdimggen --help >/dev/null \
+    && scons --version >/dev/null
 
 ENV OPENSCADPATH=/opt/openscad-libraries
 ENV BOSL2_ROOT=/opt/openscad-libraries/BOSL2
@@ -95,6 +97,7 @@ ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}
 ENV SHAPELY_VERSION=${SHAPELY_VERSION}
 ENV OPENSCAD_DOCSGEN_VERSION=${OPENSCAD_DOCSGEN_VERSION}
 ENV PILLOW_VERSION=${PILLOW_VERSION}
+ENV SCONS_VERSION=${SCONS_VERSION}
 ENV QT_QPA_PLATFORM=offscreen
 
 COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info

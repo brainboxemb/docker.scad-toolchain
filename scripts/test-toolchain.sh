@@ -22,6 +22,20 @@ git -C "$GIT_TEST_DIR" add test.txt
 git -C "$GIT_TEST_DIR" commit -q -m "Git smoke test"
 git -C "$GIT_TEST_DIR" rev-parse --verify HEAD >/dev/null
 
+echo
+echo "== SCons smoke test =="
+command -v scons >/dev/null
+scons --version >/dev/null
+python3 - <<'PY'
+import importlib.metadata as metadata
+import os
+
+actual = metadata.version("SCons")
+expected = os.environ["SCONS_VERSION"]
+assert actual == expected, f"SCons version mismatch: {actual} != {expected}"
+print(f"SCons {actual} validated")
+PY
+
 mkdir -p "$OUT"
 
 echo
