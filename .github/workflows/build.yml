@@ -11,6 +11,14 @@ on:
       - 'test/**'
       - 'CHATGPT.md'
       - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'versions.env'
+      - 'scripts/**'
+      - 'test/**'
+      - 'CHATGPT.md'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 permissions:
@@ -46,6 +54,7 @@ jobs:
           echo "shapely=${SHAPELY_VERSION}" >> "$GITHUB_OUTPUT"
           echo "docsgen=${OPENSCAD_DOCSGEN_VERSION}" >> "$GITHUB_OUTPUT"
           echo "pillow=${PILLOW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "scons=${SCONS_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         timeout-minutes: 2
@@ -53,6 +62,7 @@ jobs:
 
       - name: Log in to GHCR
         timeout-minutes: 2
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -70,12 +80,13 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
 
-      - name: Build and publish
+      - name: Build image
         timeout-minutes: 10
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           build-args: |
             PYTHONSCAD_VERSION=${{ steps.versions.outputs.pythonscad }}
             BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
@@ -83,12 +94,13 @@ jobs:
             SHAPELY_VERSION=${{ steps.versions.outputs.shapely }}
             OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
+            SCONS_VERSION=${{ steps.versions.outputs.scons }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Smoke test published image
+      - name: Smoke test image
         timeout-minutes: 5
         shell: bash
         run: |
@@ -100,6 +112,7 @@ jobs:
 
       - name: Trigger external consumer tests
         timeout-minutes: 2
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           SCAD_TOOLCHAIN_TEST_TOKEN: ${{ secrets.SCAD_TOOLCHAIN_TEST_TOKEN }}

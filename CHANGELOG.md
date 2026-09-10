@@ -10,12 +10,29 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.4.1` | Pinned SCons build engine and pre-merge Docker image validation |
 | `v0.4.0` | Lightweight PNG watermark tooling and automatic external-test triggering |
 | `v0.3.0` | OpenSCAD documentation tooling |
 | `v0.2.0` | BOSL2, pybosl2 and supporting Python geometry dependencies |
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.4.1
+
+### Added
+
+- Pinned SCons 4.11.1 as a generic public build-engine capability.
+- SCons version reporting through `scad-toolchain-info`.
+- Internal smoke coverage for the `scons` command and pinned package version.
+- Pull-request Docker builds that load and smoke-test the candidate image
+  locally without publishing it or triggering external consumer tests.
+
+### Purpose
+
+SCons is provided as generic runtime capability. Dependency policy, OpenSCAD
+source scanning, target selection and cache policy remain owned by
+`tool.scad-project` rather than this image.
 
 ## v0.4.0
 

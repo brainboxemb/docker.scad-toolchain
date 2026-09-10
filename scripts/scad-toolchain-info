@@ -16,6 +16,9 @@ python3 --version
 printf "Git        : "
 git --version
 
+printf "SCons      : "
+python3 -c 'import importlib.metadata as m; print(m.version("SCons"))'
+
 printf "BOSL2      : v%s\n" "${BOSL2_VERSION:-unknown}"
 
 printf "pybosl2    : "

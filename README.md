@@ -13,6 +13,7 @@ repository.
 - PythonSCAD
 - Python 3
 - Git
+- SCons
 - Xvfb and rendering/font dependencies
 - BOSL2 for OpenSCAD
 - pybosl2 for Python/PythonSCAD experiments
@@ -57,11 +58,16 @@ openscad
 pythonscad
 python3
 git
+scons
 scad-toolchain-info
 openscad-docsgen
 openscad-mdimggen
 scad-image-watermark
 ```
+
+SCons is intentionally only a generic runtime capability here. Build target
+selection, dependency scanning and incremental-build policy belong in
+`tool.scad-project` or another consumer.
 
 ## Image watermark tooling
 
@@ -128,9 +134,6 @@ bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "std.scad"
 bosl2 = osuse(str(bosl2_file))
 ```
 
-This keeps the physical installation path out of consumer source while still
-using the BOSL2 tree supplied by the toolchain.
-
 ## pybosl2 and external Python packages
 
 pybosl2 is installed as a separately versioned Python package under:
@@ -138,9 +141,6 @@ pybosl2 is installed as a separately versioned Python package under:
 ```text
 /opt/python-libs
 ```
-
-BOSL2 and pybosl2 are separate implementations and may have different release
-cadences.
 
 System Python sees `/opt/python-libs` through `PYTHONPATH`. PythonSCAD embeds
 its own CPython runtime and does not reliably inherit that environment path, so
@@ -161,23 +161,6 @@ pybosl2 is installed together with an explicitly pinned Shapely dependency
 because its geometry/path code imports Shapely even when package installation
 alone succeeds without it.
 
-The actual geometry smoke test runs under PythonSCAD. Plain system Python is
-used only to verify that installed Python packages and their dependencies can be
-imported.
-
-### Python module shadowing
-
-Consumer and test files must not be named `pybosl2.py`. Python places the
-script directory on its import path, so a local file with that name shadows the
-installed package and can cause a circular or partially initialized import.
-
-Use descriptive names such as:
-
-```text
-pybosl2_smoke.py
-pybosl2_consumer.py
-```
-
 ## OpenSCAD documentation tooling
 
 The image includes the upstream `openscad_docsgen` package and exposes:
@@ -188,32 +171,12 @@ openscad-mdimggen
 ```
 
 Use upstream docsgen comment syntax for structured OpenSCAD API/source
-documentation.
-
-A parsed `.scad` file must declare a top-level `// File:` or `// LibFile:`
-block before documenting modules, functions or constants.
-
-Typical validation:
-
-```bash
-openscad-docsgen -m -T component.scad
-```
-
-Typical Markdown generation:
-
-```bash
-openscad-docsgen -D docs -m component.scad
-```
-
-API/source documentation and project design documentation serve different
-purposes:
+documentation. API/source documentation and project design documentation serve
+different purposes:
 
 ```text
-.scad docsgen comments
-    -> API / source reference
-
-design.md
-    -> design intent, construction steps and visual explanation
+.scad docsgen comments -> API / source reference
+design.md               -> design intent and visual construction
 ```
 
 ## Local build
@@ -232,6 +195,7 @@ docker build \
   --build-arg SHAPELY_VERSION="$SHAPELY_VERSION" \
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
   --build-arg PILLOW_VERSION="$PILLOW_VERSION" \
+  --build-arg SCONS_VERSION="$SCONS_VERSION" \
   -t scad-toolchain:local .
 ```
 
@@ -266,50 +230,44 @@ belongs in `tool.scad-project` or the consuming project.
 
 ## Versioning and release
 
-The project is currently in the experimental `0.x` line and uses
-semantic-style versioning.
+The project is in the experimental `0.x` line and uses semantic-style
+versioning.
 
 Current development target:
 
 ```text
-v0.4.0
+v0.4.1
 ```
 
-Dependency pins for a release are defined in `versions.env`.
-
-Release history and the functional changes per version are recorded in
-[`CHANGELOG.md`](CHANGELOG.md). Keep historical version detail there rather
-than spreading it through the capability sections of this README.
+Dependency pins for a release are defined in `versions.env`. Release history is
+recorded in [`CHANGELOG.md`](CHANGELOG.md).
 
 Released Git tags and GHCR image tags are immutable. Never replace an existing
-release tag with different contents. If a released version needs a fix, create a
-patch release such as `v0.4.1`.
+release tag with different contents. A release is complete only after both the
+runtime image and its external consumer evidence have been made immutable.
 
-A release is complete only after both the runtime image and its external
-consumer evidence have been made immutable.
-
-For `v0.4.0` the release sequence is:
+Release sequence for v0.4.1:
 
 ```text
+PR candidate
+  -> build image locally in CI
+  -> internal smoke PASS
+
 main -> :edge
   -> internal smoke PASS
   -> docker.scad-toolchain.test against :edge PASS
 
-tag docker.scad-toolchain v0.4.0
-  -> publish :v0.4.0
+tag docker.scad-toolchain v0.4.1
+  -> publish :v0.4.1
   -> internal smoke PASS
-  -> automatic docker.scad-toolchain.test against :v0.4.0 PASS
-  -> mutable Pages /latest/ updated
+  -> docker.scad-toolchain.test against :v0.4.1 PASS
 
-tag docker.scad-toolchain.test test-v0.4.0-toolchain-v0.4.0
-  -> external suite against :v0.4.0 PASS
-  -> permanent Pages report:
-     /test-v0.4.0-toolchain-v0.4.0/
+tag docker.scad-toolchain.test test-v0.4.1-toolchain-v0.4.1
+  -> permanent Pages verification evidence
 ```
 
 Only after the permanent tagged verification report is green should downstream
-consumers such as `tool.scad-project` be advanced to the new toolchain
-release.
+consumers such as `tool.scad-project` be advanced to the new toolchain release.
 
 Create releases through the permanent GitHub Actions workflow:
 
@@ -317,16 +275,7 @@ Create releases through the permanent GitHub Actions workflow:
 Actions -> Release SCAD toolchain -> Run workflow
 ```
 
-Provide:
-
-```text
-version
-    e.g. v0.4.0
-
-release_sha
-    exact already-verified commit SHA
-```
-
-The release workflow creates the annotated tag and then explicitly starts the
-normal build workflow on that tag. The normal build workflow remains
-authoritative for publishing and verification.
+Provide `version` and the exact already-verified `release_sha`. The release
+workflow creates the annotated tag and dispatches the normal build workflow on
+that tag; the normal build workflow remains authoritative for publishing and
+verification.
