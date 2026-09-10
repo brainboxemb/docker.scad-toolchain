@@ -104,6 +104,7 @@ xvfb-run -a pythonscad \
   "$ROOT/test/pybosl2_smoke.py"
 test -s "$OUT/pybosl2.stl"
 
+
 echo
 echo "== OpenSCAD docsgen smoke test =="
 command -v openscad-docsgen >/dev/null
@@ -112,11 +113,13 @@ command -v openscad-mdimggen >/dev/null
 DOCSGEN_SOURCE="$ROOT/test/docsgen.scad"
 DOCSGEN_GENERATED="${DOCSGEN_SOURCE}.md"
 
+# Test-only mode acts as the source documentation lint check.
 openscad-docsgen \
   -m \
   -T \
   "$DOCSGEN_SOURCE"
 
+# Generate one real Markdown file as a functional smoke test.
 rm -f "$DOCSGEN_GENERATED"
 openscad-docsgen \
   -m \
@@ -124,6 +127,8 @@ openscad-docsgen \
 
 test -s "$DOCSGEN_GENERATED"
 grep -q "docsgen_smoke" "$DOCSGEN_GENERATED"
+
+# This is generated test output, not repository source.
 rm -f "$DOCSGEN_GENERATED"
 
 echo "openscad-docsgen parse + generation OK"
