@@ -1,17 +1,37 @@
-# ChatGPT project handoff — docker.scad-toolchain
+# Repository agent guidance
+
+Persistent guidance for automated coding agents working in
+`docker.scad-toolchain`.
 
 ## Purpose
 
-This repository builds and publishes the shared CAD runtime used by other
-brainboxemb CAD repositories.
+This repository builds and publishes the shared CAD runtime used by the
+brainboxemb SCAD ecosystem.
 
-The image is a **toolchain**, not a project-specific build system. It provides
-stable public commands and reusable CAD libraries; consumer repositories own
-their own design, render, export and verification logic.
+The image is a toolchain, not a project-specific build system. It provides
+stable commands, libraries and runtime capabilities. Project build policy belongs
+in `tool.scad-project` and consumer repositories.
+
+## Sources of truth
+
+Do not duplicate changing dependency versions in this file.
+
+Use:
+
+```text
+versions.env                         toolchain and dependency pins
+Dockerfile / scripts                 implementation
+CHANGELOG.md                         released history
+published image tag                  immutable runtime release
+scad-toolchain-info                  runtime diagnostic evidence
+```
+
+Released image tags are immutable. Never rebuild or overwrite an existing
+release tag with changed contents.
 
 ## Public runtime interface
 
-The intended stable commands are:
+Consumers should depend on stable public commands, not internal image paths:
 
 ```text
 openscad
@@ -19,466 +39,121 @@ pythonscad
 python3
 git
 scad-toolchain-info
+openscad-docsgen
+openscad-mdimggen
 scad-image-watermark
 ```
 
-Do not make consumers depend on the internal AppImage path or other Docker
-implementation details when a stable public command exists.
+When a new capability is intended for consumers, expose a stable interface and
+add real external consumer coverage in `docker.scad-toolchain.test`.
 
-## Included CAD libraries
+## Library/runtime paths
 
-The v0.2 line adds two distinct BOSL2 capabilities:
+OpenSCAD libraries are exposed through `OPENSCADPATH`. BOSL2 also has an
+explicit `BOSL2_ROOT` because PythonSCAD `osuse()`/`osinclude()` do not use
+OpenSCAD's library search path in the same way.
 
-```text
-OpenSCAD   -> BOSL2
-PythonSCAD -> pybosl2
-```
+Shared Python packages are installed under `/opt/python-libs`. System Python can
+use the configured `PYTHONPATH`; PythonSCAD's embedded Python may need explicit
+`sys.path` setup in consumers.
 
-BOSL2 is installed under `/opt/openscad-libraries/BOSL2`.
+Treat BOSL2 and pybosl2 as distinct capabilities. pybosl2 is a separate Python
+port/package, not a wrapper around the installed BOSL2 tree.
 
-The toolchain exposes:
+Use BOSL2 `std.scad` as the library entrypoint. Do not use `shapes3d.scad` as a
+standalone entrypoint.
 
-```text
-OPENSCADPATH=/opt/openscad-libraries
-BOSL2_ROOT=/opt/openscad-libraries/BOSL2
-```
+## Release discipline
 
-`OPENSCADPATH` is for normal OpenSCAD library resolution. `BOSL2_ROOT` is the
-explicit filesystem root for PythonSCAD `osuse()`/`osinclude()` and other APIs
-that do not search `OPENSCADPATH`.
+A toolchain release is not accepted merely because an image tag exists.
 
-Normal OpenSCAD consumers should still use syntax such as:
+Required sequence:
 
-```scad
-include <BOSL2/std.scad>
-```
+1. current `main` publishes/tests `:edge`;
+2. external consumer suite passes against `:edge`;
+3. create the immutable toolchain tag through the permanent release workflow;
+4. build/publish/test that exact immutable image;
+5. external consumer suite passes against the exact immutable image;
+6. create the matching immutable test-suite tag and permanent evidence;
+7. only then advance downstream consumers.
 
-`pybosl2` is installed as a separately versioned Python package under
-`/opt/python-libs`. System Python uses `PYTHONPATH`; PythonSCAD consumers must
-currently add that directory to `sys.path` explicitly.
+Use `.github/workflows/release.yml`. Do not create one-shot release workflows.
+The release workflow creates the immutable ref; the normal build workflow remains
+authoritative for building/publishing/testing the image.
 
-Do not describe pybosl2 as a wrapper around the installed BOSL2 tree. It is a
-separate Python port with its own release/version.
+## External consumer validation
 
-## Version pins
-
-All intentionally selected dependencies belong in `versions.env`.
-
-Current planned v0.2 pins:
-
-```text
-PythonSCAD  1.1.2
-BOSL2       2.0.752
-pybosl2     0.6.7
-Shapely     2.1.2
-Pillow       12.3.0
-```
-
-OpenSCAD still comes from the official development-snapshot APT repository.
-A released Docker image freezes the snapshot that was resolved during that
-build.
-
-## Release policy
-
-The `0.x` line is experimental and uses semantic-style versioning.
-
-Released image tags are immutable. Never rebuild/re-push an existing released
-version with changed contents. Adding BOSL2/pybosl2 is a meaningful toolchain
-capability change, so it belongs in the v0.2 line rather than replacing v0.1.2.
-
-## Mandatory release sequence
-
-A toolchain version is released through a **two-repository verification chain**.
-Do not skip or reorder these gates.
-
-Before starting the immutable release steps, update `CHANGELOG.md` with the
-new release line. Keep historical version information there; do not reintroduce
-version-by-version history throughout `README.md`.
-
-For a release such as `v0.4.0`:
-
-```text
-1. docker.scad-toolchain main
-   -> publish :edge
-   -> internal smoke test must pass
-
-2. automatic docker.scad-toolchain.test dispatch
-   -> test toolchain_version=edge
-   -> external consumer suite must pass
-
-3. create immutable Git tag v0.4.0 in docker.scad-toolchain
-   -> workflow publishes image :v0.4.0
-   -> internal smoke test must pass against the published tagged image
-
-4. automatic docker.scad-toolchain.test dispatch
-   -> test toolchain_version=v0.4.0
-   -> external consumer suite must pass against the immutable tagged image
-   -> this workflow_dispatch result is published under mutable Pages /latest/
-
-5. only after step 4 is green, create the immutable test-suite tag
-   test-v0.4.0-toolchain-v0.4.0 in docker.scad-toolchain.test
-
-6. the test-suite tag runs again against image :v0.4.0
-   -> it must pass
-   -> it publishes the permanent Pages evidence under:
-      /test-v0.4.0-toolchain-v0.4.0/
-
-7. only after the tagged test-suite run and permanent Pages publication are
-   green should downstream repositories such as tool.scad-project be advanced
-   to the new toolchain release
-```
-
-The `:edge` consumer test proves the release candidate. The automatic
-`v0.4.0` consumer test proves the immutable image that was actually published.
-The test-suite tag preserves that proof as permanent historical Pages evidence.
-
-**Do not call a toolchain release fully verified merely because the Docker tag
-exists or because `:edge` passed.** The immutable toolchain tag must pass the
-external consumer suite, and its matching released test-suite report must be
-published.
-
-## Release workflow for ChatGPT / connected GitHub
-
-Use the permanent workflow:
-
-```text
-.github/workflows/release.yml
-```
-
-Do not recreate temporary one-shot release workflows for normal releases.
-
-The workflow is started through `workflow_dispatch` and requires:
-
-```text
-version
-    immutable tag, for example v0.5.0
-
-release_sha
-    exact already-verified commit SHA to tag
-```
-
-The workflow deliberately:
-
-1. validates the semantic version;
-2. verifies the commit exists;
-3. refuses to overwrite an existing tag;
-4. checks that `versions.env` declares the same toolchain version;
-5. creates an annotated immutable Git tag on the explicit release SHA;
-6. explicitly dispatches `.github/workflows/build.yml` on that tag.
-
-The explicit dispatch is required because GitHub does not create ordinary
-follow-up workflow runs from pushes performed with the repository
-`GITHUB_TOKEN`. `workflow_dispatch` is the intended exception.
-
-After the release workflow runs:
-
-- verify the tag exists and points to the intended commit;
-- require the normal tagged `build.yml` run to pass;
-- require the automatically triggered external
-  `docker.scad-toolchain.test` run against the same immutable toolchain version
-  to pass;
-- then release the matching immutable test-suite tag through that repository's
-  own permanent release workflow.
-
-The normal build workflow remains authoritative for building, publishing and
-testing the image. The release workflow only creates the immutable ref and
-starts that authoritative workflow.
-
-## Lightweight image post-processing
-
-Toolchain v0.4.0 adds the public `scad-image-watermark` command.
-
-Keep this capability narrow:
-
-```text
-Docker image
-    generic PNG watermark operation
-
-tool.scad-project
-    decides when to call it and reads project configuration
-
-consumer project
-    supplies watermark text/policy
-```
-
-The implementation uses pinned Pillow rather than adding a broad/heavy graphics
-suite. Preserve the existing subtle bottom-right label behavior unless a
-separate requirement justifies expanding the public CLI.
-
-The external toolchain test must render a real PNG and pass it through the
-public command. Command existence alone is not sufficient evidence.
-
-## Automatic external consumer trigger
-
-After a successful published-image smoke test, the build workflow dispatches
-`docker.scad-toolchain.test/.github/workflows/test.yml`.
-
-Version selection is deliberate:
-
-```text
-main build
-    -> test toolchain_version=edge
-
-v* tag build
-    -> test the same immutable v* toolchain version
-```
-
-The cross-repository dispatch uses the repository secret:
-
-```text
-SCAD_TOOLCHAIN_TEST_TOKEN
-```
-
-That fine-grained token should remain limited to the
-`docker.scad-toolchain.test` repository with only GitHub Actions read/write
-permission. It is a workflow-trigger credential, not a contents-write
-credential.
-
-Keep the external test repository independently runnable through its own push
-and workflow_dispatch triggers; the producer-side trigger is an orchestration
-link, not a code dependency.
-
-## Toolchain repository vs external test repository
-
-Responsibilities are deliberately separate:
+Responsibilities are intentionally split:
 
 ```text
 docker.scad-toolchain
-    -> builds the runtime image
-    -> performs internal build/smoke tests
+    build runtime image
+    internal smoke tests
 
 docker.scad-toolchain.test
-    -> consumes the published image
-    -> verifies the public consumer interface
-    -> publishes evidence/reports
+    consume published image
+    verify public interface
+    publish verification evidence
 ```
 
-A capability is not considered proven merely because its package exists in the
-Docker image. Add a real consumer test to `docker.scad-toolchain.test`.
+Internal tests should stay small and prove packaging/runtime basics. Broader
+interoperability and consumer behavior belong in the external test repository.
 
-For BOSL2 the external test suite should cover:
+A package being installed is not sufficient proof. Test actual imports, commands
+and representative geometry/output paths.
+
+## PythonSCAD compatibility conclusions
+
+Keep PythonSCAD available as a toolchain capability, but do not weaken reusable
+OpenSCAD object-oriented APIs to accommodate current interoperability limits.
+
+Known compatibility probes in the external suite include:
+
+- PythonSCAD consuming BOSL2 SCAD through `osuse()`;
+- PythonSCAD crossing an OpenSCAD `object()` API boundary.
+
+Do not hide expected incompatibilities with test-only shims. Unexpected success
+means the compatibility conclusion should be reviewed.
+
+Never name a consumer script after an imported package such as `pybosl2.py`,
+because Python import shadowing can invalidate the test.
+
+## OpenSCAD documentation tooling
+
+`openscad_docsgen` is a public capability. Structured source must begin with
+`File:` or `LibFile:` before `Module`, `Function`, `Constant`, etc.
+
+Keep API/source documentation separate from project design documentation:
 
 ```text
-OpenSCAD   -> BOSL2 .scad
-PythonSCAD -> BOSL2 .scad through osuse()/osinclude()
-PythonSCAD -> pybosl2
+docsgen comments     API/source reference
+design.md            design intent and visual construction
 ```
 
-The last two should use equivalent small geometry so their behavior can be
-compared.
+Smoke tests must validate the actual files produced by the invoked docsgen
+command rather than guessing output locations.
 
-## BOSL2 path resolution rule
+## Image post-processing
 
-Do not assume PythonSCAD `osuse()` searches OpenSCAD's `OPENSCADPATH`.
-
-A failure such as:
+`scad-image-watermark` is deliberately narrow. It is a generic PNG operation.
 
 ```text
-FileNotFoundError: osuse(): file not found: 'BOSL2/shapes3d.scad'
+docker.scad-toolchain    implements image operation
+tool.scad-project        decides when/how to call it
+consumer project         supplies policy/text
 ```
 
-means the SCAD file must be supplied as an actual filesystem path.
-
-Use:
-
-```python
-import os
-from pathlib import Path
-
-bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "std.scad"
-bosl2 = osuse(str(bosl2_file))
-```
-
-`BOSL2_ROOT` is part of the public toolchain environment and points to the
-pinned BOSL2 installation.
-
-## PythonSCAD external package path
-
-Python packages that are part of the toolchain are installed under:
-
-```text
-/opt/python-libs
-```
-
-Normal system Python sees that directory through `PYTHONPATH`.
-
-Do **not** assume PythonSCAD will inherit `PYTHONPATH`. PythonSCAD uses an
-embedded CPython runtime; external packages must currently be made visible from
-the design/test script itself:
-
-```python
-import sys
-sys.path.insert(0, "/opt/python-libs")
-```
-
-This follows PythonSCAD's documented pattern for external pip packages.
-
-Consumer tests for PythonSCAD + pybosl2 must include this path setup. A system
-Python import is not sufficient evidence that PythonSCAD can import the same
-package.
-
-## Python import-shadowing rule
-
-Never name a consumer/test script `pybosl2.py`.
-
-Python adds the script directory to `sys.path`, so a local `pybosl2.py` shadows
-the installed package. An import such as:
-
-```python
-from pybosl2 import cuboid
-```
-
-then imports the test file itself and fails with a partially initialized /
-circular import error.
-
-Use descriptive names such as `pybosl2_smoke.py` instead.
-
-## pybosl2 dependency note
-
-For pybosl2 0.6.7, a real import of its geometry/path stack reaches
-`pybosl2.path2d`, which imports `shapely`. In the tested package installation
-Shapely was not installed automatically.
-
-Therefore the toolchain explicitly pins and installs:
-
-```text
-Shapely 2.1.2
-```
-
-Do not remove this merely because `pip install pybosl2` succeeds. Package
-metadata/version checks are insufficient: keep an import-level dependency smoke
-test, and keep the actual geometry test under PythonSCAD.
-
-System Python is not the target runtime for native pybosl2 geometry. Its smoke
-test should validate dependency availability only. PythonSCAD is responsible
-for proving `cuboid()`/geometry creation works.
-
-## PythonSCAD status
-
-PythonSCAD remains available in this general toolchain even though current
-reusable library development prefers OpenSCAD.
-
-The clamp-library investigation found that current PythonSCAD interoperability
-does not transfer OpenSCAD `object()` values across the Python/OpenSCAD
-boundary. Do not weaken object-oriented OpenSCAD library APIs merely to work
-around that limitation.
-
-BOSL2/pybosl2 support is included as toolchain capability and experimentation,
-not as a decision to make PythonSCAD the primary CAD-library direction.
+Do not move project-specific watermark decisions into this repository.
 
 ## Change discipline
 
 Before changing consumers:
 
-1. change this toolchain;
-2. publish a new immutable image/version;
-3. prove the capability in `docker.scad-toolchain.test`;
-4. only then update downstream CAD repositories deliberately.
+1. implement the runtime capability here;
+2. publish a new immutable release candidate/release as appropriate;
+3. prove it in `docker.scad-toolchain.test`;
+4. then deliberately update downstream repositories.
 
-Keep internal smoke tests small. Broader behavior/interoperability belongs in
-the external consumer test repository.
-
-
-## BOSL2 entrypoint rule
-
-Use `std.scad` as the BOSL2 library entrypoint in both OpenSCAD and PythonSCAD
-tests.
-
-```text
-OpenSCAD
-    include <BOSL2/std.scad>
-
-PythonSCAD
-    osuse(BOSL2_ROOT/std.scad)
-```
-
-Do not directly load `shapes3d.scad`; it assumes the standard BOSL2 environment
-created by `std.scad`.
-
-
-## OpenSCAD documentation tooling
-
-Toolchain `v0.3.0` includes the pinned PyPI package `openscad_docsgen`.
-
-Public commands:
-
-```text
-openscad-docsgen
-openscad-mdimggen
-```
-
-When `.scad` files contain structured API/source comments, prefer upstream
-`openscad_docsgen` syntax.
-
-Keep API/reference documentation and design documentation separate:
-
-```text
-docsgen comments -> API/source reference
-design.md        -> design intent and visual construction
-```
-
-Internal smoke coverage must prove:
-- both commands exist;
-- docsgen test/lint mode parses a real `.scad` file;
-- normal docsgen execution produces Markdown.
-
-
-## BOSL2 / PythonSCAD compatibility note
-
-Keep the BOSL2 entrypoint rule explicit:
-
-```text
-OpenSCAD:
-    include <BOSL2/std.scad>
-
-PythonSCAD osuse() experiments:
-    BOSL2_ROOT/std.scad
-```
-
-Never use `shapes3d.scad` as the BOSL2 entrypoint. It relies on constants and
-support modules loaded by `std.scad`.
-
-The external toolchain test currently records direct
-`PythonSCAD -> BOSL2 .scad` as an XFAIL because BOSL2 relies on OpenSCAD's
-date-based `version_num()` runtime semantics.
-
-
-### Docsgen file-header requirement
-
-Every `.scad` source parsed by `openscad-docsgen` must start its structured
-documentation with exactly one of:
-
-```scad
-// File: filename.scad
-```
-
-or:
-
-```scad
-// LibFile: filename.scad
-```
-
-before any `Module`, `Function`, `Constant`, `Section`, etc. block.
-
-The internal smoke source `test/docsgen.scad` intentionally verifies this
-minimal valid structure.
-
-
-### Docsgen smoke output
-
-The internal toolchain smoke test invokes `openscad-docsgen` directly on
-`test/docsgen.scad`.
-
-For the pinned docsgen version, the file-level `-m` smoke invocation produces:
-
-```text
-test/docsgen.scad.md
-```
-
-next to the source. The smoke test therefore verifies that exact generated
-file is non-empty and contains the documented module name, then removes it.
-
-Do not infer docsgen success from a custom `find` of an assumed output
-directory. The test should validate the output that the invoked command
-actually creates.
-
+Keep dependency pins centralized in `versions.env` and keep release history in
+`CHANGELOG.md` rather than copying version tables into multiple documentation
+files.
