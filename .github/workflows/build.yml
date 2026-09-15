@@ -9,7 +9,7 @@ on:
       - 'versions.env'
       - 'scripts/**'
       - 'test/**'
-      - 'CHATGPT.md'
+      - 'AGENTS.md'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
@@ -17,7 +17,7 @@ on:
       - 'versions.env'
       - 'scripts/**'
       - 'test/**'
-      - 'CHATGPT.md'
+      - 'AGENTS.md'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -69,9 +69,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Docker metadata
+      - name: Docker metadata — OpenSCAD runtime
         timeout-minutes: 2
-        id: meta
+        id: meta_openscad
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/scad-toolchain-openscad
+          tags: |
+            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
+      - name: Docker metadata — full runtime
+        timeout-minutes: 2
+        id: meta_full
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository_owner }}/scad-toolchain
@@ -80,11 +91,29 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
 
-      - name: Build image
+      - name: Build OpenSCAD runtime
         timeout-minutes: 10
         uses: docker/build-push-action@v6
         with:
           context: .
+          target: openscad
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          build-args: |
+            BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
+            OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
+            PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
+            SCONS_VERSION=${{ steps.versions.outputs.scons }}
+          tags: ${{ steps.meta_openscad.outputs.tags }}
+          labels: ${{ steps.meta_openscad.outputs.labels }}
+          cache-from: type=gha
+
+      - name: Build full runtime
+        timeout-minutes: 10
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: full
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           build-args: |
@@ -95,20 +124,40 @@ jobs:
             OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_full.outputs.tags }}
+          labels: ${{ steps.meta_full.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Smoke test image
-        timeout-minutes: 5
+      - name: Smoke test both published runtime contracts
+        timeout-minutes: 7
         shell: bash
+        env:
+          OPENSCAD_TAGS: ${{ steps.meta_openscad.outputs.tags }}
+          FULL_TAGS: ${{ steps.meta_full.outputs.tags }}
         run: |
-          IMAGE="$(echo '${{ steps.meta.outputs.tags }}' | head -n1)"
+          set -euo pipefail
+
+          OPENSCAD_IMAGE="$(printf '%s\n' "$OPENSCAD_TAGS" | head -n1)"
+          FULL_IMAGE="$(printf '%s\n' "$FULL_TAGS" | head -n1)"
+
+          echo "OpenSCAD runtime: ${OPENSCAD_IMAGE}"
           docker run --rm \
             -v "$PWD:/work" \
-            "$IMAGE" \
+            "$OPENSCAD_IMAGE" \
             bash /work/scripts/test-toolchain.sh
+
+          echo "Full runtime: ${FULL_IMAGE}"
+          docker run --rm \
+            -v "$PWD:/work" \
+            "$FULL_IMAGE" \
+            bash /work/scripts/test-toolchain.sh
+
+          echo "Local unpacked image sizes after smoke test:"
+          docker image inspect \
+            --format='{{.RepoTags}} {{.Size}} bytes' \
+            "$OPENSCAD_IMAGE" \
+            "$FULL_IMAGE"
 
       - name: Trigger external consumer tests
         timeout-minutes: 2
