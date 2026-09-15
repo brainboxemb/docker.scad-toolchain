@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - diagnostic/migration-005-image-distribution
     tags: ['v*']
     paths:
       - 'Dockerfile'
