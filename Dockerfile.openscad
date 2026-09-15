@@ -1,0 +1,78 @@
+FROM ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BOSL2_VERSION=2.0.752
+ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
+ARG PILLOW_VERSION=12.3.0
+ARG SCONS_VERSION=4.11.1
+
+LABEL org.opencontainers.image.title="SCAD toolchain OpenSCAD runtime diagnostic"
+LABEL org.opencontainers.image.description="OpenSCAD-focused CI runtime without experimental PythonSCAD capabilities"
+LABEL org.opencontainers.image.source="https://github.com/brainboxemb/docker.scad-toolchain"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl wget jq gnupg git xvfb \
+    fontconfig fonts-dejavu-core \
+    libgl1 libegl1 libx11-6 libxext6 libxrender1 libxi6 libxkbcommon0 \
+    libdbus-1-3 libglib2.0-0 \
+    python3 python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# OpenSCAD development snapshot from the official OBS repository.
+RUN wget -qO /etc/apt/trusted.gpg.d/obs-openscad-nightly.asc \
+      https://files.openscad.org/OBS-Repository-Key.pub \
+    && echo 'deb https://download.opensuse.org/repositories/home:/t-paul/xUbuntu_24.04/ /' \
+      > /etc/apt/sources.list.d/openscad-nightly.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends openscad-nightly \
+    && ln -s "$(command -v openscad-nightly)" /usr/local/bin/openscad \
+    && rm -rf /var/lib/apt/lists/*
+
+# BOSL2 remains part of the primary OpenSCAD library runtime.
+RUN set -eux; \
+    mkdir -p /opt/openscad-libraries /tmp/bosl2; \
+    curl -fL \
+      "https://github.com/BelfrySCAD/BOSL2/archive/refs/tags/v${BOSL2_VERSION}.tar.gz" \
+      -o /tmp/bosl2.tar.gz; \
+    tar -xzf /tmp/bosl2.tar.gz -C /tmp/bosl2; \
+    src="$(find /tmp/bosl2 -mindepth 1 -maxdepth 1 -type d | head -n1)"; \
+    test -n "$src"; \
+    mv "$src" /opt/openscad-libraries/BOSL2; \
+    rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
+    test -f /opt/openscad-libraries/BOSL2/std.scad
+
+# Pillow is retained because scad-image-watermark is part of the normal
+# OpenSCAD publication lifecycle. PythonSCAD, pybosl2 and Shapely are omitted.
+RUN python3 -m pip install \
+      --no-cache-dir \
+      --break-system-packages \
+      --target /opt/python-libs \
+      "pillow==${PILLOW_VERSION}" \
+    && PYTHONPATH=/opt/python-libs python3 -c \
+      'import importlib.metadata as m; from PIL import Image; assert m.version("Pillow"); assert Image'
+
+# Generic project-build and OpenSCAD source/API documentation tooling.
+RUN python3 -m pip install \
+      --no-cache-dir \
+      --break-system-packages \
+      "openscad_docsgen==${OPENSCAD_DOCSGEN_VERSION}" \
+      "SCons==${SCONS_VERSION}" \
+    && openscad-docsgen --help >/dev/null \
+    && openscad-mdimggen --help >/dev/null \
+    && scons --version >/dev/null
+
+ENV OPENSCADPATH=/opt/openscad-libraries
+ENV BOSL2_ROOT=/opt/openscad-libraries/BOSL2
+ENV PYTHONPATH=/opt/python-libs
+ENV BOSL2_VERSION=${BOSL2_VERSION}
+ENV OPENSCAD_DOCSGEN_VERSION=${OPENSCAD_DOCSGEN_VERSION}
+ENV PILLOW_VERSION=${PILLOW_VERSION}
+ENV SCONS_VERSION=${SCONS_VERSION}
+ENV QT_QPA_PLATFORM=offscreen
+
+COPY scripts/scad-image-watermark /usr/local/bin/scad-image-watermark
+RUN chmod +x /usr/local/bin/scad-image-watermark
+
+WORKDIR /work
+
+CMD ["openscad", "--version"]
