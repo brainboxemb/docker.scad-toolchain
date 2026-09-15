@@ -1,6 +1,3 @@
-FROM ubuntu:24.04
-
-ARG DEBIAN_FRONTEND=noninteractive
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
 ARG PYBOSL2_VERSION=0.6.7
@@ -9,15 +6,24 @@ ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
 ARG SCONS_VERSION=4.11.1
 
-LABEL org.opencontainers.image.title="SCAD toolchain"
-LABEL org.opencontainers.image.description="OpenSCAD + PythonSCAD + BOSL2 + pybosl2 CI toolchain"
+FROM ubuntu:24.04 AS openscad
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BOSL2_VERSION
+ARG OPENSCAD_DOCSGEN_VERSION
+ARG PILLOW_VERSION
+ARG SCONS_VERSION
+
+LABEL org.opencontainers.image.title="SCAD toolchain OpenSCAD runtime"
+LABEL org.opencontainers.image.description="OpenSCAD + BOSL2 + documentation and build tooling"
 LABEL org.opencontainers.image.source="https://github.com/brainboxemb/docker.scad-toolchain"
+LABEL org.opencontainers.image.scad-toolchain-profile="openscad"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl wget jq gnupg git xvfb \
     fontconfig fonts-dejavu-core \
     libgl1 libegl1 libx11-6 libxext6 libxrender1 libxi6 libxkbcommon0 \
-    libdbus-1-3 libglib2.0-0 libfuse2 \
+    libdbus-1-3 libglib2.0-0 \
     python3 python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -31,8 +37,67 @@ RUN wget -qO /etc/apt/trusted.gpg.d/obs-openscad-nightly.asc \
     && ln -s "$(command -v openscad-nightly)" /usr/local/bin/openscad \
     && rm -rf /var/lib/apt/lists/*
 
+# BOSL2 is part of the shared OpenSCAD-facing runtime.
+RUN set -eux; \
+    mkdir -p /opt/openscad-libraries /tmp/bosl2; \
+    curl -fL \
+      "https://github.com/BelfrySCAD/BOSL2/archive/refs/tags/v${BOSL2_VERSION}.tar.gz" \
+      -o /tmp/bosl2.tar.gz; \
+    tar -xzf /tmp/bosl2.tar.gz -C /tmp/bosl2; \
+    src="$(find /tmp/bosl2 -mindepth 1 -maxdepth 1 -type d | head -n1)"; \
+    test -n "$src"; \
+    mv "$src" /opt/openscad-libraries/BOSL2; \
+    rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
+    test -f /opt/openscad-libraries/BOSL2/std.scad
+
+# Shared OpenSCAD project tooling. Pillow remains here because the public
+# scad-image-watermark command is part of normal OpenSCAD publication.
+RUN python3 -m pip install \
+      --no-cache-dir \
+      --break-system-packages \
+      "openscad_docsgen==${OPENSCAD_DOCSGEN_VERSION}" \
+      "Pillow==${PILLOW_VERSION}" \
+      "SCons==${SCONS_VERSION}" \
+    && openscad-docsgen --help >/dev/null \
+    && openscad-mdimggen --help >/dev/null \
+    && scons --version >/dev/null \
+    && python3 -c 'from PIL import Image; assert Image'
+
+ENV SCAD_TOOLCHAIN_PROFILE=openscad
+ENV OPENSCADPATH=/opt/openscad-libraries
+ENV BOSL2_ROOT=/opt/openscad-libraries/BOSL2
+ENV BOSL2_VERSION=${BOSL2_VERSION}
+ENV OPENSCAD_DOCSGEN_VERSION=${OPENSCAD_DOCSGEN_VERSION}
+ENV PILLOW_VERSION=${PILLOW_VERSION}
+ENV SCONS_VERSION=${SCONS_VERSION}
+ENV QT_QPA_PLATFORM=offscreen
+
+COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info
+COPY scripts/scad-image-watermark /usr/local/bin/scad-image-watermark
+RUN chmod +x /usr/local/bin/scad-toolchain-info /usr/local/bin/scad-image-watermark
+
+WORKDIR /work
+CMD ["scad-toolchain-info"]
+
+
+FROM openscad AS full
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG PYTHONSCAD_VERSION
+ARG PYBOSL2_VERSION
+ARG SHAPELY_VERSION
+
+LABEL org.opencontainers.image.title="SCAD toolchain full runtime"
+LABEL org.opencontainers.image.description="OpenSCAD toolchain plus PythonSCAD and Python CAD interoperability tooling"
+LABEL org.opencontainers.image.scad-toolchain-profile="full"
+
+# PythonSCAD currently needs FUSE compatibility libraries at runtime even
+# though the AppImage is extracted during the image build.
+RUN apt-get update && apt-get install -y --no-install-recommends libfuse2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # PythonSCAD release AppImage. Resolve the exact Linux x86_64 AppImage from the
-# requested GitHub release so the Dockerfile does not depend on an asset filename.
+# requested GitHub release so the Dockerfile does not depend on an asset name.
 RUN set -eux; \
     release="$(curl -fsSL "https://api.github.com/repos/pythonscad/pythonscad/releases/tags/v${PYTHONSCAD_VERSION}")"; \
     url="$(printf '%s' "$release" | jq -r '[.assets[] | select(.name | test("(?i)(x86_64|amd64).*\\.AppImage$|\\.AppImage.*(x86_64|amd64)$"))][0].browser_download_url // empty')"; \
@@ -48,62 +113,22 @@ RUN set -eux; \
     rm /tmp/pythonscad.AppImage; \
     ln -s /opt/pythonscad/AppRun /usr/local/bin/pythonscad
 
-# BOSL2 is installed as a normal OpenSCAD library under a stable path.
-# OPENSCADPATH below makes <BOSL2/...> includes work in consuming projects.
-RUN set -eux; \
-    mkdir -p /opt/openscad-libraries /tmp/bosl2; \
-    curl -fL \
-      "https://github.com/BelfrySCAD/BOSL2/archive/refs/tags/v${BOSL2_VERSION}.tar.gz" \
-      -o /tmp/bosl2.tar.gz; \
-    tar -xzf /tmp/bosl2.tar.gz -C /tmp/bosl2; \
-    src="$(find /tmp/bosl2 -mindepth 1 -maxdepth 1 -type d | head -n1)"; \
-    test -n "$src"; \
-    mv "$src" /opt/openscad-libraries/BOSL2; \
-    rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
-    test -f /opt/openscad-libraries/BOSL2/std.scad
-
-# Install the Python BOSL2 port into an explicit shared library directory.
-# PYTHONPATH makes the package available to both system Python and, when the
-# embedded runtime honours PYTHONPATH, PythonSCAD. The external consumer test
-# deliberately verifies the PythonSCAD case.
-# pybosl2 0.6.7 imports Shapely from its path/region implementation, but the
-# observed package installation does not install Shapely transitively. Keep
-# that runtime dependency explicit and pinned in this reproducible toolchain.
+# Python-only CAD libraries remain confined to the full runtime. They are kept
+# under an explicit path because PythonSCAD's embedded runtime may require the
+# path to be inserted by consumers.
 RUN python3 -m pip install \
       --no-cache-dir \
       --break-system-packages \
       --target /opt/python-libs \
       "pybosl2==${PYBOSL2_VERSION}" \
       "shapely==${SHAPELY_VERSION}" \
-      "pillow==${PILLOW_VERSION}" \
     && PYTHONPATH=/opt/python-libs python3 -c \
-      'import importlib.metadata as m; import pybosl2; import shapely; from PIL import Image; assert m.version("pybosl2"); assert m.version("shapely"); assert m.version("Pillow"); assert Image'
+      'import importlib.metadata as m; import pybosl2; import shapely; assert m.version("pybosl2"); assert m.version("shapely")'
 
-# Generic project-build and OpenSCAD source/API documentation tooling.
-RUN python3 -m pip install \
-      --no-cache-dir \
-      --break-system-packages \
-      "openscad_docsgen==${OPENSCAD_DOCSGEN_VERSION}" \
-      "SCons==${SCONS_VERSION}" \
-    && openscad-docsgen --help >/dev/null \
-    && openscad-mdimggen --help >/dev/null \
-    && scons --version >/dev/null
-
-ENV OPENSCADPATH=/opt/openscad-libraries
-ENV BOSL2_ROOT=/opt/openscad-libraries/BOSL2
+ENV SCAD_TOOLCHAIN_PROFILE=full
 ENV PYTHONPATH=/opt/python-libs
-ENV BOSL2_VERSION=${BOSL2_VERSION}
+ENV PYTHONSCAD_VERSION=${PYTHONSCAD_VERSION}
 ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}
 ENV SHAPELY_VERSION=${SHAPELY_VERSION}
-ENV OPENSCAD_DOCSGEN_VERSION=${OPENSCAD_DOCSGEN_VERSION}
-ENV PILLOW_VERSION=${PILLOW_VERSION}
-ENV SCONS_VERSION=${SCONS_VERSION}
-ENV QT_QPA_PLATFORM=offscreen
-
-COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info
-COPY scripts/scad-image-watermark /usr/local/bin/scad-image-watermark
-RUN chmod +x /usr/local/bin/scad-toolchain-info /usr/local/bin/scad-image-watermark
-
-WORKDIR /work
 
 CMD ["scad-toolchain-info"]
