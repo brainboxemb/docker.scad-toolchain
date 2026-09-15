@@ -3,8 +3,20 @@ set -euo pipefail
 
 ROOT="/work"
 OUT="/tmp/scad-toolchain-test"
+PROFILE="${SCAD_TOOLCHAIN_PROFILE:-unknown}"
 
 scad-toolchain-info
+
+echo
+echo "== Runtime profile =="
+printf 'SCAD_TOOLCHAIN_PROFILE=%s\n' "$PROFILE"
+case "$PROFILE" in
+  openscad|full) ;;
+  *)
+    echo "ERROR: unsupported SCAD_TOOLCHAIN_PROFILE=${PROFILE}" >&2
+    exit 1
+    ;;
+esac
 
 echo
 echo "== Git smoke test =="
@@ -88,22 +100,29 @@ echo "== BOSL2 OpenSCAD smoke test =="
 openscad -o "$OUT/bosl2.stl" "$ROOT/test/bosl2.scad"
 test -s "$OUT/bosl2.stl"
 
-echo
-echo "== pybosl2 Python dependencies =="
-python3 -c 'import pybosl2, shapely; print("pybosl2 + Shapely imports OK")'
+if [[ "$PROFILE" == "full" ]]; then
+  echo
+  echo "== pybosl2 Python dependencies =="
+  PYTHONPATH="${PYTHONPATH:-/opt/python-libs}" \
+    python3 -c 'import pybosl2, shapely; print("pybosl2 + Shapely imports OK")'
 
-echo
-echo "== PythonSCAD smoke test =="
-pythonscad --version >/dev/null 2>&1 || pythonscad --help >/dev/null 2>&1
+  echo
+  echo "== PythonSCAD smoke test =="
+  command -v pythonscad >/dev/null
+  pythonscad --version >/dev/null 2>&1 || pythonscad --help >/dev/null 2>&1
 
-echo
-echo "== PythonSCAD + pybosl2 smoke test =="
-xvfb-run -a pythonscad \
-  --trust-python \
-  -o "$OUT/pybosl2.stl" \
-  "$ROOT/test/pybosl2_smoke.py"
-test -s "$OUT/pybosl2.stl"
-
+  echo
+  echo "== PythonSCAD + pybosl2 smoke test =="
+  xvfb-run -a pythonscad \
+    --trust-python \
+    -o "$OUT/pybosl2.stl" \
+    "$ROOT/test/pybosl2_smoke.py"
+  test -s "$OUT/pybosl2.stl"
+else
+  echo
+  echo "== PythonSCAD-specific smoke tests =="
+  echo "Skipped for OpenSCAD-focused runtime."
+fi
 
 echo
 echo "== OpenSCAD docsgen smoke test =="
@@ -113,13 +132,11 @@ command -v openscad-mdimggen >/dev/null
 DOCSGEN_SOURCE="$ROOT/test/docsgen.scad"
 DOCSGEN_GENERATED="${DOCSGEN_SOURCE}.md"
 
-# Test-only mode acts as the source documentation lint check.
 openscad-docsgen \
   -m \
   -T \
   "$DOCSGEN_SOURCE"
 
-# Generate one real Markdown file as a functional smoke test.
 rm -f "$DOCSGEN_GENERATED"
 openscad-docsgen \
   -m \
@@ -127,11 +144,9 @@ openscad-docsgen \
 
 test -s "$DOCSGEN_GENERATED"
 grep -q "docsgen_smoke" "$DOCSGEN_GENERATED"
-
-# This is generated test output, not repository source.
 rm -f "$DOCSGEN_GENERATED"
 
 echo "openscad-docsgen parse + generation OK"
 
 echo
-echo "Smoke test passed."
+echo "Smoke test passed for ${PROFILE} runtime."

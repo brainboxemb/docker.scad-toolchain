@@ -2,78 +2,117 @@
 
 Shared Docker toolchain for reproducible scripted CAD builds and renders.
 
-The image provides a reusable runtime environment for repositories using
-OpenSCAD and PythonSCAD. Project-specific build policy belongs outside this
+The repository publishes a related runtime-image family from one multi-stage
+source. Project-specific build and dependency policy belongs outside this
 repository.
 
-## Included tools and libraries
+## Runtime profiles
 
-- OpenSCAD development snapshot (`openscad-nightly`) with stable `openscad`
-  command
-- PythonSCAD
-- Python 3
-- Git
-- Xvfb and rendering/font dependencies
-- BOSL2 for OpenSCAD
-- pybosl2 for Python/PythonSCAD experiments
-- Shapely runtime dependency used by pybosl2 path/region code
-- openscad_docsgen
-- Pillow for lightweight PNG post-processing
-- `scad-image-watermark` for adding a small copyright/watermark label to PNG
-  renders
+### OpenSCAD-focused runtime
 
-Inspect the actual runtime with:
-
-```bash
-scad-toolchain-info
-```
-
-## Container image
-
-Published image:
+Published as:
 
 ```text
-ghcr.io/brainboxemb/scad-toolchain
+ghcr.io/brainboxemb/scad-toolchain-openscad:<version>
 ```
 
-Consumers should normally use an immutable version tag:
+It contains the capabilities needed by normal OpenSCAD projects:
+
+- OpenSCAD development snapshot with stable `openscad` command;
+- Python 3 and Git;
+- Xvfb plus rendering/font dependencies;
+- BOSL2 for OpenSCAD;
+- `openscad_docsgen` / `openscad-docsgen` / `openscad-mdimggen`;
+- Pillow and `scad-image-watermark`;
+- SCons.
+
+### Full / dual runtime
+
+Published as the existing compatibility image:
 
 ```text
 ghcr.io/brainboxemb/scad-toolchain:<version>
 ```
 
-The mutable `:edge` tag represents the current `main` build and is intended
-for development and pre-release verification.
+It extends the OpenSCAD runtime with:
+
+- PythonSCAD;
+- pybosl2;
+- Shapely;
+- PythonSCAD-specific runtime dependencies.
+
+The existing `scad-toolchain` package therefore remains the full runtime.
+Consumers that intentionally support both OpenSCAD and PythonSCAD keep the
+same image name; OpenSCAD-only consumers may opt into the smaller focused
+profile.
+
+Use immutable version tags in normal consumers. The mutable `:edge` tags
+represent current `main` and exist for development/pre-release validation.
+
+## Profile selection
+
+The image repository does not decide which profile a project needs.
+`tool.scad-project` owns that project-level policy.
+
+Conceptually:
+
+```text
+OpenSCAD-only project
+    -> scad-toolchain-openscad:<version>
+
+project with PythonSCAD capability
+    -> scad-toolchain:<version>
+```
+
+Do not maintain repository-name allowlists in CI. Runtime choice should follow
+the effective project capabilities/configuration.
+
+## Inspecting a runtime
+
+Both profiles expose:
+
+```bash
+scad-toolchain-info
+```
+
+The output includes `SCAD_TOOLCHAIN_PROFILE` and reports optional full-runtime
+components as `not installed` in the OpenSCAD profile.
 
 ## Public runtime interface
 
-Consumers should use the stable public commands and environment variables
-exposed by the image rather than depending on internal installation paths.
-
-Important public commands include:
+Shared commands available in both profiles include:
 
 ```text
 openscad
-pythonscad
 python3
 git
+scons
 scad-toolchain-info
 openscad-docsgen
 openscad-mdimggen
 scad-image-watermark
 ```
 
+The full profile additionally exposes:
+
+```text
+pythonscad
+```
+
+Consumers should depend on these public commands/environment variables rather
+than internal installation paths.
+
 ## Image watermark tooling
 
-The toolchain exposes one deliberately small image-processing command:
+The shared runtime exposes:
 
 ```text
 scad-image-watermark
 ```
 
 It uses Pillow and the fonts already present in the rendering environment. The
-command adds a subtle bottom-right label and is not intended to turn the
-toolchain into a general graphics-processing environment.
+command adds a small bottom-right label and is not intended as a general image
+processing framework.
 
 Example:
 
@@ -81,25 +120,20 @@ Example:
 scad-image-watermark input.png output.png --text "© 2026 brainboxemb"
 ```
 
-The consuming project or workflow decides whether watermarking is enabled and
-what text is used. The Docker image only supplies the generic operation.
+The consuming project decides whether watermarking is enabled and what text is
+used.
 
 ## BOSL2
 
-BOSL2 is installed as a normal OpenSCAD library. Two public environment
-variables expose it:
+BOSL2 is installed as a normal OpenSCAD library in both profiles. Public
+environment variables expose it:
 
 ```text
 OPENSCADPATH=/opt/openscad-libraries
 BOSL2_ROOT=/opt/openscad-libraries/BOSL2
 ```
 
-`OPENSCADPATH` is intended for normal OpenSCAD `include`/`use` resolution.
-`BOSL2_ROOT` gives PythonSCAD and other consumers an explicit filesystem path
-for APIs such as `osuse()` that do not resolve libraries through
-`OPENSCADPATH`.
-
-Normal OpenSCAD usage:
+Typical OpenSCAD usage:
 
 ```scad
 include <BOSL2/std.scad>
@@ -107,44 +141,38 @@ include <BOSL2/std.scad>
 cuboid([30, 20, 10], rounding=3);
 ```
 
-Use `std.scad` as the normal BOSL2 entrypoint. Do not use component files such
-as `shapes3d.scad` as shortcut entrypoints; those files depend on constants and
-support modules loaded by `std.scad`.
+Use `std.scad` as the normal BOSL2 entrypoint.
 
 ### PythonSCAD consuming BOSL2 SCAD files
 
-PythonSCAD `osuse()` requires a real file path. Do not assume it searches
-`OPENSCADPATH`.
-
-Use the toolchain-provided `BOSL2_ROOT`:
+This is relevant only to the full runtime. PythonSCAD `osuse()` requires a
+real path; it should not assume `OPENSCADPATH` search behaviour.
 
 ```python
 import os
 from pathlib import Path
-
 from pythonscad import *
 
 bosl2_file = Path(os.environ["BOSL2_ROOT"]) / "std.scad"
 bosl2 = osuse(str(bosl2_file))
 ```
 
-This keeps the physical installation path out of consumer source while still
-using the BOSL2 tree supplied by the toolchain.
+This keeps the physical installation path out of consumer configuration while
+using the BOSL2 tree supplied by the runtime.
 
 ## pybosl2 and external Python packages
 
-pybosl2 is installed as a separately versioned Python package under:
+The full runtime installs pybosl2 and its pinned Shapely dependency under:
 
 ```text
 /opt/python-libs
 ```
 
-BOSL2 and pybosl2 are separate implementations and may have different release
+BOSL2 and pybosl2 are separate implementations and can have different release
 cadences.
 
-System Python sees `/opt/python-libs` through `PYTHONPATH`. PythonSCAD embeds
-its own CPython runtime and does not reliably inherit that environment path, so
-PythonSCAD consumers must currently add the shared package directory explicitly:
+System Python sees the directory through `PYTHONPATH`. PythonSCAD embeds its
+own CPython runtime and may require consumers to add the path explicitly:
 
 ```python
 import sys
@@ -157,38 +185,22 @@ part = cuboid([30, 20, 10], rounding=3)
 part.show()
 ```
 
-pybosl2 is installed together with an explicitly pinned Shapely dependency
-because its geometry/path code imports Shapely even when package installation
-alone succeeds without it.
+Consumer/test files must not be named `pybosl2.py`, because that would shadow
+the installed package.
 
-The actual geometry smoke test runs under PythonSCAD. Plain system Python is
-used only to verify that installed Python packages and their dependencies can be
-imported.
-
-### Python module shadowing
-
-Consumer and test files must not be named `pybosl2.py`. Python places the
-script directory on its import path, so a local file with that name shadows the
-installed package and can cause a circular or partially initialized import.
-
-Use descriptive names such as:
-
-```text
-pybosl2_smoke.py
-pybosl2_consumer.py
-```
+The external test repository keeps the known PythonSCAD/OpenSCAD
+interoperability limitations as explicit XFAIL probes. The existence of those
+boundaries does not mean PythonSCAD is removed from projects that intentionally
+support it.
 
 ## OpenSCAD documentation tooling
 
-The image includes the upstream `openscad_docsgen` package and exposes:
+Both profiles include the upstream `openscad_docsgen` package and expose:
 
 ```text
 openscad-docsgen
 openscad-mdimggen
 ```
-
-Use upstream docsgen comment syntax for structured OpenSCAD API/source
-documentation.
 
 A parsed `.scad` file must declare a top-level `// File:` or `// LibFile:`
 block before documenting modules, functions or constants.
@@ -205,128 +217,163 @@ Typical Markdown generation:
 openscad-docsgen -D docs -m component.scad
 ```
 
-API/source documentation and project design documentation serve different
-purposes:
+API/source documentation and project design documentation remain separate
+concerns:
 
 ```text
-.scad docsgen comments
-    -> API / source reference
+.scad docsgen comments -> API/source reference
 
-design.md
-    -> design intent, construction steps and visual explanation
+design.md              -> design intent and visual explanation
 ```
 
 ## Local build
 
-All intentionally selected dependency versions are stored in `versions.env`.
+All selected dependency versions are stored in `versions.env`.
 
 ```bash
 set -a
 source versions.env
 set +a
+```
 
+Build the OpenSCAD profile:
+
+```bash
 docker build \
+  --target openscad \
+  --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
+  --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
+  --build-arg PILLOW_VERSION="$PILLOW_VERSION" \
+  --build-arg SCONS_VERSION="$SCONS_VERSION" \
+  -t scad-toolchain-openscad:local .
+```
+
+Build the full profile:
+
+```bash
+docker build \
+  --target full \
   --build-arg PYTHONSCAD_VERSION="$PYTHONSCAD_VERSION" \
   --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
   --build-arg PYBOSL2_VERSION="$PYBOSL2_VERSION" \
   --build-arg SHAPELY_VERSION="$SHAPELY_VERSION" \
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
   --build-arg PILLOW_VERSION="$PILLOW_VERSION" \
+  --build-arg SCONS_VERSION="$SCONS_VERSION" \
   -t scad-toolchain:local .
 ```
 
-Run the internal smoke test:
+Run the internal smoke tests:
 
 ```bash
+docker run --rm \
+  -v "$PWD:/work" \
+  scad-toolchain-openscad:local \
+  bash /work/scripts/test-toolchain.sh
+
 docker run --rm \
   -v "$PWD:/work" \
   scad-toolchain:local \
   bash /work/scripts/test-toolchain.sh
 ```
 
+The smoke script detects the profile and verifies the appropriate contract.
+
+## External qualification
+
+`brainboxemb/docker.scad-toolchain.test` is the external consumer contract for
+the published image family.
+
+It runs the shared OpenSCAD-facing contract against both profiles and runs the
+PythonSCAD/pybosl2-specific coverage only against the full profile.
+
+For Migration 005 the qualified candidate measured:
+
+| Profile | Compressed OCI bytes |
+| --- | ---: |
+| OpenSCAD-focused | 328,098,501 |
+| full/dual | 449,516,893 |
+
+The focused profile therefore avoids 121,418,392 compressed bytes, about 27%,
+for consumers that do not need PythonSCAD.
+
+Routine qualification pulls the OpenSCAD profile first and lets the full
+profile reuse shared local Docker layers. A separate controlled benchmark was
+used to compare independent cold pulls; destructive Docker pruning is not part
+of normal CI.
+
 ## Repository responsibilities
 
 ```text
 docker.scad-toolchain
-    -> builds and publishes the CAD runtime
+    -> builds and publishes both CAD runtime profiles
 
 docker.scad-toolchain.test
-    -> externally validates the published runtime
+    -> externally validates both published profiles
     -> publishes verification reports
 
 tool.scad-project
-    -> reusable project workflow and build orchestration
+    -> selects a runtime from effective project capabilities
+    -> owns project workflow and build orchestration
 
 CAD projects and libraries
     -> design source, project configuration and project-specific verification
 ```
 
-The runtime repository should contain generic capabilities only. Project policy
+The runtime repository contains generic capabilities only. Project policy
 belongs in `tool.scad-project` or the consuming project.
 
 ## Versioning and release
 
-The project is currently in the experimental `0.x` line and uses
-semantic-style versioning.
+The project is in the experimental `0.x` line and uses semantic-style
+versioning.
 
 Current development target:
 
 ```text
-v0.4.0
+v0.5.0
 ```
 
-Dependency pins for a release are defined in `versions.env`.
-
-Release history and the functional changes per version are recorded in
-[`CHANGELOG.md`](CHANGELOG.md). Keep historical version detail there rather
-than spreading it through the capability sections of this README.
+Dependency pins and the release version are defined in `versions.env`.
+Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 
 Released Git tags and GHCR image tags are immutable. Never replace an existing
-release tag with different contents. If a released version needs a fix, create a
-patch release such as `v0.4.1`.
+release tag with different contents.
 
-A release is complete only after both the runtime image and its external
-consumer evidence have been made immutable.
+A release is complete only after both runtime profiles and their external
+consumer evidence are immutable.
 
-For `v0.4.0` the release sequence is:
+For `v0.5.0` the sequence is:
 
 ```text
-main -> :edge
+main
+  -> publish both :edge profiles
   -> internal smoke PASS
   -> docker.scad-toolchain.test against :edge PASS
 
-tag docker.scad-toolchain v0.4.0
-  -> publish :v0.4.0
+tag docker.scad-toolchain v0.5.0
+  -> publish both :v0.5.0 profiles
   -> internal smoke PASS
-  -> automatic docker.scad-toolchain.test against :v0.4.0 PASS
+  -> automatic docker.scad-toolchain.test against :v0.5.0 PASS
   -> mutable Pages /latest/ updated
 
-tag docker.scad-toolchain.test test-v0.4.0-toolchain-v0.4.0
-  -> external suite against :v0.4.0 PASS
+tag docker.scad-toolchain.test test-v0.5.0-toolchain-v0.5.0
+  -> external suite against both :v0.5.0 profiles PASS
   -> permanent Pages report:
-     /test-v0.4.0-toolchain-v0.4.0/
+     /test-v0.5.0-toolchain-v0.5.0/
 ```
 
 Only after the permanent tagged verification report is green should downstream
-consumers such as `tool.scad-project` be advanced to the new toolchain
-release.
+consumers such as `tool.scad-project` move to the new runtime release.
 
-Create releases through the permanent GitHub Actions workflow:
-
-```text
-Actions -> Release SCAD toolchain -> Run workflow
-```
-
-Provide:
+Create the runtime release through the permanent GitHub Actions Release
+workflow using:
 
 ```text
-version
-    e.g. v0.4.0
-
-release_sha
-    exact already-verified commit SHA
+version      v0.5.0
+release_sha  exact already-verified main commit SHA
 ```
 
-The release workflow creates the annotated tag and then explicitly starts the
-normal build workflow on that tag. The normal build workflow remains
-authoritative for publishing and verification.
+The release workflow creates the annotated tag and explicitly starts the normal
+Build workflow on that tag. The Build workflow remains authoritative for
+publishing both images and triggering external verification.
