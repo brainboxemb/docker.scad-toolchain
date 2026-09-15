@@ -2,7 +2,9 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - diagnostic/migration-005-image-distribution
     tags: ['v*']
     paths:
       - 'Dockerfile'
@@ -161,7 +163,9 @@ jobs:
 
       - name: Trigger external consumer tests
         timeout-minutes: 2
-        if: github.event_name != 'pull_request'
+        if: >-
+          github.event_name != 'pull_request' &&
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
         shell: bash
         env:
           SCAD_TOOLCHAIN_TEST_TOKEN: ${{ secrets.SCAD_TOOLCHAIN_TEST_TOKEN }}
