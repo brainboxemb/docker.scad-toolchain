@@ -1,5 +1,6 @@
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
+ARG OPENSCAD_NEW_DIMENSIONS_REF=HEAD
 ARG PYBOSL2_VERSION=0.6.7
 ARG SHAPELY_VERSION=2.1.2
 ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
@@ -10,6 +11,7 @@ FROM ubuntu:24.04 AS openscad
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BOSL2_VERSION
+ARG OPENSCAD_NEW_DIMENSIONS_REF
 ARG OPENSCAD_DOCSGEN_VERSION
 ARG PILLOW_VERSION
 ARG SCONS_VERSION
@@ -49,6 +51,23 @@ RUN set -eux; \
     mv "$src" /opt/openscad-libraries/BOSL2; \
     rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
     test -f /opt/openscad-libraries/BOSL2/std.scad
+
+# Probe the Codeberg-hosted OpenSCAD dimensioning library in the same shared
+# library location as BOSL2. This feature branch intentionally resolves HEAD
+# once so CI can prove Codeberg reachability and report the exact commit.
+# Before merge/release this MUST be replaced by an immutable commit pin.
+RUN set -eux; \
+    git clone --depth 1 \
+      "https://codeberg.org/adrien-delhorme/openscad-new-dimensions.git" \
+      /tmp/openscad-new-dimensions; \
+    resolved="$(git -C /tmp/openscad-new-dimensions rev-parse HEAD)"; \
+    echo "openscad-new-dimensions resolved commit: ${resolved}"; \
+    echo "openscad-new-dimensions top-level files:"; \
+    find /tmp/openscad-new-dimensions -maxdepth 2 -type f -printf '%P\n' | sort; \
+    rm -rf /tmp/openscad-new-dimensions/.git; \
+    mv /tmp/openscad-new-dimensions /opt/openscad-libraries/openscad-new-dimensions
+
+ENV OPENSCAD_NEW_DIMENSIONS_ROOT=/opt/openscad-libraries/openscad-new-dimensions
 
 # Shared OpenSCAD project tooling. Pillow remains here because the public
 # scad-image-watermark command is part of normal OpenSCAD publication.
