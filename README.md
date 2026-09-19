@@ -22,6 +22,7 @@ It contains the capabilities needed by normal OpenSCAD projects:
 - Python 3 and Git;
 - Xvfb plus rendering/font dependencies;
 - BOSL2 for OpenSCAD;
+- `openscad-new-dimensions` for dimensioned 2D OpenSCAD/SVG drawings;
 - `openscad_docsgen` / `openscad-docsgen` / `openscad-mdimggen`;
 - Pillow and `scad-image-watermark`;
 - SCons.
@@ -122,6 +123,27 @@ scad-image-watermark input.png output.png --text "© 2026 brainboxemb"
 
 The consuming project decides whether watermarking is enabled and what text is
 used.
+
+## openscad-new-dimensions
+
+The Codeberg-hosted `adrien-delhorme/openscad-new-dimensions` library is
+installed in both runtime profiles as a normal OpenSCAD library at:
+
+```text
+/opt/openscad-libraries/openscad-new-dimensions
+```
+
+The exact upstream commit is pinned in `versions.env` and exposed through:
+
+```text
+OPENSCAD_NEW_DIMENSIONS_ROOT
+OPENSCAD_NEW_DIMENSIONS_COMMIT
+```
+
+Because `OPENSCADPATH=/opt/openscad-libraries`, consumers can include the
+library without carrying a Codeberg submodule or GitHub mirror. The internal
+smoke test runs the upstream `demo/demo.scad` and requires OpenSCAD to export
+a non-empty SVG.
 
 ## BOSL2
 
@@ -242,6 +264,7 @@ Build the OpenSCAD profile:
 docker build \
   --target openscad \
   --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
+  --build-arg OPENSCAD_NEW_DIMENSIONS_COMMIT="$OPENSCAD_NEW_DIMENSIONS_COMMIT" \
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
   --build-arg PILLOW_VERSION="$PILLOW_VERSION" \
   --build-arg SCONS_VERSION="$SCONS_VERSION" \
@@ -255,6 +278,7 @@ docker build \
   --target full \
   --build-arg PYTHONSCAD_VERSION="$PYTHONSCAD_VERSION" \
   --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
+  --build-arg OPENSCAD_NEW_DIMENSIONS_COMMIT="$OPENSCAD_NEW_DIMENSIONS_COMMIT" \
   --build-arg PYBOSL2_VERSION="$PYBOSL2_VERSION" \
   --build-arg SHAPELY_VERSION="$SHAPELY_VERSION" \
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
