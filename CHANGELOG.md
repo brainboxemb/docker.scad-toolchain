@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.5.2` | Open-source acknowledgment TXT/PDF and runtime license inventories |
 | `v0.5.1` | Pinned OpenSCAD dimensioning library with SVG smoke coverage |
 | `v0.5.0` | Capability-focused OpenSCAD and full/dual runtime image family |
 | `v0.4.1` | Pinned SCons build engine and pre-merge Docker image validation |
@@ -19,6 +20,38 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.5.2
+
+### Added
+
+- Maintained `compliance/OPEN_SOURCE_ACKNOWLEDGMENTS.txt` authoring input for
+  third-party software distributed in the runtime images.
+- Generated `OPEN_SOURCE_ACKNOWLEDGMENTS.txt` and
+  `OPEN_SOURCE_ACKNOWLEDGMENTS.pdf` in both runtime profiles under
+  `/usr/share/doc/scad-toolchain`.
+- Direct-component license-file index plus installed Debian/Python package
+  inventories beside the acknowledgment documents.
+- Release-tag CI artifact containing the generated acknowledgment TXT/PDF and
+  inventories for both runtime profiles.
+- Internal smoke coverage that requires the acknowledgment documents and
+  validates the generated PDF envelope.
+
+### Changed
+
+- Expose the immutable toolchain version through `SCAD_TOOLCHAIN_VERSION` and
+  report the acknowledgment locations through `scad-toolchain-info`.
+- Preserve an upstream PythonSCAD `COPYING` file explicitly in the full
+  runtime so its distributed license terms are retained independently of
+  AppImage layout.
+
+### Distribution boundary
+
+Ubuntu/Debian package copyright files continue to ship in their normal
+`/usr/share/doc/*/copyright` locations. The generated acknowledgment document
+focuses on the direct runtime components and points to complete installed
+package inventories/transitive notice locations rather than duplicating every
+operating-system notice into the PDF.
 
 ## v0.5.1
 

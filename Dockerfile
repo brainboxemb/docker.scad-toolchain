@@ -1,4 +1,4 @@
-ARG PYTHONSCAD_VERSION=1.1.2
+ARG TOOLCHAIN_VERSION=0.5.2\nARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
 ARG OPENSCAD_NEW_DIMENSIONS_COMMIT=d37828e26df6067fbd872e8e291c6b0b19298243
 ARG PYBOSL2_VERSION=0.6.7
@@ -10,6 +10,7 @@ ARG SCONS_VERSION=4.11.1
 FROM ubuntu:24.04 AS openscad
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TOOLCHAIN_VERSION
 ARG BOSL2_VERSION
 ARG OPENSCAD_NEW_DIMENSIONS_COMMIT
 ARG OPENSCAD_DOCSGEN_VERSION
@@ -87,6 +88,7 @@ RUN python3 -m pip install \
     && python3 -c 'from PIL import Image; assert Image'
 
 ENV SCAD_TOOLCHAIN_PROFILE=openscad
+ENV SCAD_TOOLCHAIN_VERSION=${TOOLCHAIN_VERSION}
 ENV OPENSCADPATH=/opt/openscad-libraries
 ENV BOSL2_ROOT=/opt/openscad-libraries/BOSL2
 ENV BOSL2_VERSION=${BOSL2_VERSION}
@@ -97,7 +99,16 @@ ENV QT_QPA_PLATFORM=offscreen
 
 COPY scripts/scad-toolchain-info /usr/local/bin/scad-toolchain-info
 COPY scripts/scad-image-watermark /usr/local/bin/scad-image-watermark
-RUN chmod +x /usr/local/bin/scad-toolchain-info /usr/local/bin/scad-image-watermark
+COPY scripts/build-open-source-acknowledgments.py /usr/local/bin/build-open-source-acknowledgments
+COPY compliance/OPEN_SOURCE_ACKNOWLEDGMENTS.txt /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt
+RUN chmod +x \
+      /usr/local/bin/scad-toolchain-info \
+      /usr/local/bin/scad-image-watermark \
+      /usr/local/bin/build-open-source-acknowledgments \
+    && build-open-source-acknowledgments \
+      --input /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt \
+      --output-dir /usr/share/doc/scad-toolchain \
+      --profile openscad
 
 WORKDIR /work
 CMD ["scad-toolchain-info"]
@@ -106,6 +117,7 @@ CMD ["scad-toolchain-info"]
 FROM openscad AS full
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TOOLCHAIN_VERSION
 ARG PYTHONSCAD_VERSION
 ARG PYBOSL2_VERSION
 ARG SHAPELY_VERSION
@@ -134,6 +146,9 @@ RUN set -eux; \
     /tmp/pythonscad.AppImage --appimage-extract >/dev/null; \
     mv squashfs-root pythonscad; \
     rm /tmp/pythonscad.AppImage; \
+    curl -fL \
+      "https://raw.githubusercontent.com/pythonscad/pythonscad/v${PYTHONSCAD_VERSION}/COPYING" \
+      -o /opt/pythonscad/COPYING.upstream; \
     ln -s /opt/pythonscad/AppRun /usr/local/bin/pythonscad
 
 # Python-only CAD libraries remain confined to the full runtime. They are kept
@@ -153,5 +168,10 @@ ENV PYTHONPATH=/opt/python-libs
 ENV PYTHONSCAD_VERSION=${PYTHONSCAD_VERSION}
 ENV PYBOSL2_VERSION=${PYBOSL2_VERSION}
 ENV SHAPELY_VERSION=${SHAPELY_VERSION}
+
+RUN build-open-source-acknowledgments \
+      --input /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt \
+      --output-dir /usr/share/doc/scad-toolchain \
+      --profile full
 
 CMD ["scad-toolchain-info"]

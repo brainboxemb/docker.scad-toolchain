@@ -1,0 +1,98 @@
+SCAD TOOLCHAIN - OPEN SOURCE ACKNOWLEDGMENTS
+===========================================
+
+Toolchain release : @SCAD_TOOLCHAIN_VERSION@
+Runtime profile   : @SCAD_TOOLCHAIN_PROFILE@
+Base system       : @OS_PRETTY_NAME@
+OpenSCAD package  : @OPENSCAD_PACKAGE_VERSION@
+
+This document accompanies the distributed SCAD toolchain container image.
+It records the principal third-party components intentionally assembled by
+brainboxemb and reproduces their bundled license/copyright material.
+
+The maintained authoring input for this document is:
+
+  compliance/OPEN_SOURCE_ACKNOWLEDGMENTS.txt
+
+The image build substitutes the exact runtime versions, appends the license and
+copyright files found for the direct runtime components, and generates the TXT
+and PDF forms from the same assembled text. Do not edit the generated PDF.
+
+SHARED OPENSCAD RUNTIME COMPONENTS
+----------------------------------
+
+Ubuntu base and system packages
+  Version/base : @OS_PRETTY_NAME@
+  Notices      : /usr/share/doc/*/copyright
+  Inventory    : /usr/share/doc/scad-toolchain/DEBIAN_PACKAGES.txt
+
+OpenSCAD development snapshot
+  Package      : @OPENSCAD_PACKAGE_VERSION@
+  Source       : https://github.com/openscad/openscad
+  Package repo : https://download.opensuse.org/repositories/home:/t-paul/xUbuntu_24.04/
+
+BOSL2
+  Version      : @BOSL2_VERSION@
+  Source       : https://github.com/BelfrySCAD/BOSL2
+
+openscad-new-dimensions
+  Commit       : @OPENSCAD_NEW_DIMENSIONS_COMMIT@
+  Source       : https://codeberg.org/adrien-delhorme/openscad-new-dimensions
+
+openscad_docsgen
+  Version      : @OPENSCAD_DOCSGEN_VERSION@
+  Source       : https://github.com/BelfrySCAD/openscad_docsgen
+
+Pillow
+  Version      : @PILLOW_VERSION@
+  Source       : https://github.com/python-pillow/Pillow
+
+SCons
+  Version      : @SCONS_VERSION@
+  Source       : https://github.com/SCons/scons
+
+FULL RUNTIME ADDITIONS
+----------------------
+
+PythonSCAD
+  Version      : @PYTHONSCAD_VERSION@
+  Source       : https://github.com/pythonscad/pythonscad
+
+pybosl2
+  Version      : @PYBOSL2_VERSION@
+  Source       : https://github.com/pinkfish/pybosl2
+
+Shapely
+  Version      : @SHAPELY_VERSION@
+  Source       : https://github.com/shapely/shapely
+
+For the OpenSCAD-focused profile, full-runtime-only components above are shown
+as "not installed in this profile".
+
+PACKAGE INVENTORIES AND TRANSITIVE NOTICES
+------------------------------------------
+
+The image also contains transitive operating-system and Python dependencies.
+Their exact installed versions are recorded in:
+
+  /usr/share/doc/scad-toolchain/DEBIAN_PACKAGES.txt
+  /usr/share/doc/scad-toolchain/PYTHON_DISTRIBUTIONS.txt
+
+Ubuntu/Debian package copyright material remains distributed in the standard
+package locations under /usr/share/doc/*/copyright. Python package license
+files remain in their installed distribution metadata. The generated direct
+license index records the concrete files used to assemble the license sections
+below.
+
+SOURCE AND BUILD PROVENANCE
+---------------------------
+
+The container build recipe and immutable dependency pins are published at:
+
+  https://github.com/brainboxemb/docker.scad-toolchain
+
+Released container tags are immutable. The exact release tag plus the component
+versions/commit above identify the distributed runtime.
+
+This acknowledgment record is technical distribution documentation. It does
+not replace the terms of the individual licenses reproduced below.

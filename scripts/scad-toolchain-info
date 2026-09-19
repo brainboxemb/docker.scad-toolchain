@@ -6,6 +6,7 @@ PROFILE="${SCAD_TOOLCHAIN_PROFILE:-unknown}"
 echo "SCAD toolchain"
 echo "=============="
 printf "Profile    : %s\n" "$PROFILE"
+printf "Toolchain  : %s\n" "${SCAD_TOOLCHAIN_VERSION:-unknown}"
 
 printf "OpenSCAD   : "
 openscad --version 2>&1
@@ -53,3 +54,5 @@ printf "OPENSCADPATH: %s\n" "${OPENSCADPATH:-<unset>}"
 printf "BOSL2_ROOT  : %s\n" "${BOSL2_ROOT:-<unset>}"
 printf "DIMENSIONS_ROOT: %s\n" "${OPENSCAD_NEW_DIMENSIONS_ROOT:-<unset>}"
 printf "PYTHONPATH : %s\n" "${PYTHONPATH:-<unset>}"
+printf "Acknowledgments TXT: %s\n" "/usr/share/doc/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt"
+printf "Acknowledgments PDF: %s\n" "/usr/share/doc/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf"
