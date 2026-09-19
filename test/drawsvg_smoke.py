@@ -11,7 +11,7 @@ def main() -> None:
     output = Path(sys.argv[1])
     output.parent.mkdir(parents=True, exist_ok=True)
 
-    sheet = draw.Drawing(297, 210, origin=(0, 0), display_inline=False)
+    sheet = draw.Drawing(297, 210, origin=(0, 0))
     sheet.append(draw.Rectangle(
         10, 10, 277, 190,
         fill="white",
@@ -40,7 +40,7 @@ def main() -> None:
         fill="black",
         font_family="DejaVu Sans",
     ))
-    sheet.save_svg(output)
+    sheet.save_svg(str(output))
 
 
 if __name__ == "__main__":

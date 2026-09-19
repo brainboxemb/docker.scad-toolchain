@@ -315,6 +315,7 @@ docker build \\
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \\
   --build-arg PILLOW_VERSION="$PILLOW_VERSION" \\
   --build-arg SCONS_VERSION="$SCONS_VERSION" \\
+  --build-arg DRAWSVG_VERSION="$DRAWSVG_VERSION" \\
   -t scad-toolchain-drawing:local .
 ```
 
