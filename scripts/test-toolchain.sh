@@ -105,11 +105,15 @@ echo "== openscad-new-dimensions SVG smoke test =="
 test -n "${OPENSCAD_NEW_DIMENSIONS_ROOT:-}"
 test -n "${OPENSCAD_NEW_DIMENSIONS_COMMIT:-}"
 test -f "${OPENSCAD_NEW_DIMENSIONS_ROOT}/dimensions.scad"
-test -f "${OPENSCAD_NEW_DIMENSIONS_ROOT}/demo/demo.scad"
+
+echo "Public declarations in dimensions.scad:"
+grep -E '^[[:space:]]*(module|function)[[:space:]]+' \
+  "${OPENSCAD_NEW_DIMENSIONS_ROOT}/dimensions.scad" \
+  | head -n 40 || true
 
 openscad \
   -o "$OUT/openscad-new-dimensions.svg" \
-  "${OPENSCAD_NEW_DIMENSIONS_ROOT}/demo/demo.scad"
+  "$ROOT/test/dimensions_2d.scad"
 
 test -s "$OUT/openscad-new-dimensions.svg"
 grep -qi '<svg' "$OUT/openscad-new-dimensions.svg"
