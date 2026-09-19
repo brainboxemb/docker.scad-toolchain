@@ -380,7 +380,7 @@ versioning.
 Current development target:
 
 ```text
-v0.5.0
+v0.5.2
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
