@@ -37,6 +37,7 @@ Consumers should depend on stable public commands, not internal image paths:
 openscad
 pythonscad
 inkscape  # drawing profile only
+freecadcmd # drawing profile only, headless TechDraw/HLR
 python3
 git
 scad-toolchain-info
@@ -49,9 +50,10 @@ When a new capability is intended for consumers, expose a stable interface and
 add real external consumer coverage in `docker.scad-toolchain.test`.
 
 Keep optional publication tooling in a dedicated runtime profile when it would
-otherwise enlarge normal CAD builds. The drawing profile owns Inkscape; OpenSCAD
-owns CAD geometry/projections, while scripted SVG composition owns dimensions,
-leaders, sheet layout and annotations.
+otherwise enlarge normal CAD builds. The drawing profile owns Inkscape and
+headless FreeCAD/TechDraw HLR. OpenSCAD remains the primary CAD geometry source,
+FreeCAD may provide an independent visible/hidden-edge projection oracle, and
+scripted SVG composition owns dimensions, leaders, sheet layout and annotations.
 
 ## Library/runtime paths
 

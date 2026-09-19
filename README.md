@@ -35,7 +35,10 @@ ghcr.io/brainboxemb/scad-toolchain-drawing:<version>
 ```
 
 It extends the OpenSCAD-focused runtime with drawsvg for readable Python SVG
-authoring and Inkscape CLI for deterministic rendering/export. The intended pipeline is:
+authoring, Inkscape CLI for deterministic rendering/export, and headless
+FreeCAD/TechDraw for CAD-style hidden-line-removal reference projections.
+
+The normal publication path remains:
 
 ```text
 OpenSCAD geometry/projections
@@ -45,8 +48,19 @@ OpenSCAD geometry/projections
     -> SVG / PNG / PDF
 ```
 
+For geometry-validation work the same profile additionally supports:
+
+```text
+OpenSCAD -> STL
+    -> FreeCAD mesh -> refined Part shape
+    -> TechDraw HLR
+    -> visible/hidden 2D edge reference
+```
+
 The drawing profile deliberately does not rely on an OpenSCAD dimensioning
 library; dimensioning and sheet composition belong to the scripted SVG layer.
+FreeCAD HLR is an independent projection/reference capability rather than a
+replacement geometry source.
 
 ### Full / dual runtime
 
@@ -148,6 +162,7 @@ The drawing profile additionally exposes:
 
 ```text
 inkscape
+freecadcmd
 Python package: drawsvg
 ```
 
@@ -403,7 +418,7 @@ versioning.
 Current development target:
 
 ```text
-v0.6.1
+v0.7.0
 ```
 
 Dependency pins and the release version are defined in `versions.env`.

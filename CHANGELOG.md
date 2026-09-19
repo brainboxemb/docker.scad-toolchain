@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.7.0` | FreeCAD/TechDraw HLR capability in the drawing runtime |
 | `v0.6.1` | Pinned drawsvg authoring library in the drawing runtime |
 | `v0.6.0` | Optional Inkscape drawing runtime; remove OpenSCAD dimension library from current runtime |
 | `v0.5.3` | Publish acknowledgment TXT/PDF directly as GitHub Release assets |
@@ -23,6 +24,27 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.7.0
+
+### Added
+
+- FreeCAD in the drawing runtime only, with a stable public `freecadcmd`
+  entrypoint for headless automation.
+- Headless TechDraw hidden-line-removal smoke coverage that produces real SVG
+  from a 3D Part shape.
+- Runtime diagnostics and open-source acknowledgment/license coverage for
+  FreeCAD.
+
+### Purpose
+
+FreeCAD/TechDraw provides an independent CAD-style visible/hidden-edge
+projection route for drawing and reverse-engineering experiments. Consumers can
+compare OpenSCAD geometry or STL output with an HLR reference without making
+FreeCAD the source of the model.
+
+The external consumer suite owns the stronger STL -> mesh -> refined Part shape
+-> TechDraw HLR qualification.
 
 ## v0.6.1
 
