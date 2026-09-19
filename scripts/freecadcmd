@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# FreeCAD's official Linux bundle ships an AppRun launcher that prepares the
+# bundled Python/Qt/OCCT environment. Its first argument may select a binary
+# from usr/bin, so keep that environment while exposing one stable public
+# headless command to consumers.
+exec /opt/freecad/AppRun freecadcmd "$@"

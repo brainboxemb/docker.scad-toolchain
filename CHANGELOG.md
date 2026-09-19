@@ -29,8 +29,9 @@ Released Git and container tags are immutable.
 
 ### Added
 
-- FreeCAD in the drawing runtime only, with a stable public `freecadcmd`
-  entrypoint for headless automation.
+- FreeCAD in the drawing runtime only, distributed from the checksum-pinned
+  official Linux AppImage bundle with a stable public `freecadcmd` entrypoint
+  for headless automation.
 - Headless TechDraw hidden-line-removal smoke coverage that produces real SVG
   from a 3D Part shape.
 - Runtime diagnostics and open-source acknowledgment/license coverage for

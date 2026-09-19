@@ -55,8 +55,10 @@ Inkscape
   Source       : https://gitlab.com/inkscape/inkscape
 
 FreeCAD
-  Package      : @FREECAD_PACKAGE_VERSION@
+  Version      : @FREECAD_VERSION@
+  Distribution : official FreeCAD-Bundle Linux AppImage
   Source       : https://github.com/FreeCAD/FreeCAD
+  Bundle       : https://github.com/FreeCAD/FreeCAD-Bundle
 
 drawsvg
   Version      : @DRAWSVG_VERSION@
@@ -88,6 +90,7 @@ Their exact installed versions are recorded in:
 
   /usr/share/doc/scad-toolchain/DEBIAN_PACKAGES.txt
   /usr/share/doc/scad-toolchain/PYTHON_DISTRIBUTIONS.txt
+  /usr/share/doc/scad-toolchain/FREECAD_PACKAGES.txt
 
 Ubuntu/Debian package copyright material remains distributed in the standard
 package locations under /usr/share/doc/*/copyright. Python package license

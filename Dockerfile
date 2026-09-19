@@ -7,6 +7,8 @@ ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
 ARG SCONS_VERSION=4.11.1
 ARG DRAWSVG_VERSION=2.4.2
+ARG FREECAD_VERSION=1.0.2
+ARG FREECAD_APPIMAGE_SHA256=e00be00ad9fdb12b05c5002bfd1aa2ea8126f2c1d4e2fb603eb7423b72904f61
 
 FROM ubuntu:24.04 AS openscad
 
@@ -98,6 +100,8 @@ FROM openscad AS drawing
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TOOLCHAIN_VERSION
 ARG DRAWSVG_VERSION
+ARG FREECAD_VERSION
+ARG FREECAD_APPIMAGE_SHA256
 
 LABEL org.opencontainers.image.title="SCAD toolchain drawing runtime"
 LABEL org.opencontainers.image.description="OpenSCAD toolchain plus FreeCAD HLR and deterministic technical-drawing publication"
@@ -105,13 +109,30 @@ LABEL org.opencontainers.image.scad-toolchain-profile="drawing"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       inkscape \
-      freecad \
-    && rm -rf /var/lib/apt/lists/* \
-    && set -eux; \
-      freecad_real="$(command -v FreeCADCmd || command -v freecadcmd)"; \
-      test -n "$freecad_real"; \
-      ln -sf "$freecad_real" /usr/local/bin/freecadcmd; \
-      freecadcmd --version
+    && rm -rf /var/lib/apt/lists/*
+
+# Ubuntu 24.04 does not publish FreeCAD. Use the official stable FreeCAD
+# bundle instead of mixing packages from another Ubuntu release. The AppImage
+# is checksum-pinned, extracted at build time, and invoked through its AppRun
+# environment so the bundled Python/OCCT/TechDraw stack stays self-contained.
+RUN set -eux; \
+    test "$(dpkg --print-architecture)" = "amd64"; \
+    freecad_asset="FreeCAD_${FREECAD_VERSION}-conda-Linux-x86_64-py311.AppImage"; \
+    freecad_url="https://github.com/FreeCAD/FreeCAD-Bundle/releases/download/${FREECAD_VERSION}/${freecad_asset}"; \
+    curl -fL "$freecad_url" -o /tmp/freecad.AppImage; \
+    echo "${FREECAD_APPIMAGE_SHA256}  /tmp/freecad.AppImage" | sha256sum -c -; \
+    chmod +x /tmp/freecad.AppImage; \
+    cd /tmp; \
+    /tmp/freecad.AppImage --appimage-extract >/dev/null; \
+    mv /tmp/squashfs-root /opt/freecad; \
+    rm /tmp/freecad.AppImage; \
+    test -x /opt/freecad/AppRun; \
+    test -x /opt/freecad/usr/bin/freecadcmd; \
+    test -s /opt/freecad/packages.txt; \
+    curl -fL \
+      "https://raw.githubusercontent.com/FreeCAD/FreeCAD/${FREECAD_VERSION}/LICENSE" \
+      -o /opt/freecad/LICENSE.FreeCAD; \
+    test -s /opt/freecad/LICENSE.FreeCAD
 
 # Python owns readable SVG composition. Inkscape remains the separate
 # rendering/export layer, so drawsvg is installed without raster extras.
@@ -123,6 +144,11 @@ RUN python3 -m pip install \
 
 ENV SCAD_TOOLCHAIN_PROFILE=drawing
 ENV DRAWSVG_VERSION=${DRAWSVG_VERSION}
+ENV FREECAD_VERSION=${FREECAD_VERSION}
+
+COPY scripts/freecadcmd /usr/local/bin/freecadcmd
+RUN chmod +x /usr/local/bin/freecadcmd \
+    && freecadcmd --version
 
 RUN build-open-source-acknowledgments \
       --input /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt \

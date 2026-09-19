@@ -66,8 +66,8 @@ def template_values(profile: str) -> dict[str, str]:
             if profile == "drawing"
             else "not installed in this profile"
         ),
-        "FREECAD_PACKAGE_VERSION": (
-            package_version("freecad")
+        "FREECAD_VERSION": (
+            environment("FREECAD_VERSION")
             if profile == "drawing"
             else "not installed in this profile"
         ),
@@ -142,7 +142,7 @@ def direct_license_groups(profile: str) -> list[tuple[str, list[Path]]]:
             ),
             (
                 "FreeCAD",
-                first_existing_globs(["/usr/share/doc/freecad/copyright"]),
+                first_existing_globs(["/opt/freecad/LICENSE.FreeCAD"]),
             ),
             ("drawsvg", distribution_license_files("drawsvg")),
         ])
@@ -174,6 +174,20 @@ def write_package_inventories(output_dir: Path) -> None:
     ]
     (output_dir / "PYTHON_DISTRIBUTIONS.txt").write_text(
         "\n".join(python_lines) + ("\n" if python_lines else ""),
+        encoding="utf-8",
+    )
+
+    freecad_inventory = Path("/opt/freecad/packages.txt")
+    if freecad_inventory.is_file():
+        freecad_text = freecad_inventory.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).rstrip() + "\n"
+    else:
+        freecad_text = "not installed in this profile\n"
+
+    (output_dir / "FREECAD_PACKAGES.txt").write_text(
+        freecad_text,
         encoding="utf-8",
     )
 

@@ -60,6 +60,8 @@ jobs:
           echo "pillow=${PILLOW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "scons=${SCONS_VERSION}" >> "$GITHUB_OUTPUT"
           echo "drawsvg=${DRAWSVG_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "freecad=${FREECAD_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "freecad_sha256=${FREECAD_APPIMAGE_SHA256}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         timeout-minutes: 2
@@ -140,6 +142,8 @@ jobs:
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
             DRAWSVG_VERSION=${{ steps.versions.outputs.drawsvg }}
+            FREECAD_VERSION=${{ steps.versions.outputs.freecad }}
+            FREECAD_APPIMAGE_SHA256=${{ steps.versions.outputs.freecad_sha256 }}
           tags: ${{ steps.meta_drawing.outputs.tags }}
           labels: ${{ steps.meta_drawing.outputs.labels }}
           cache-from: type=gha
