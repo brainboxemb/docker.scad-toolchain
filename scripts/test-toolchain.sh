@@ -53,6 +53,13 @@ grep -Eiq '^Pillow[[:space:]]' "${PYTHON_INVENTORY}"
 grep -Eiq '^SCons[[:space:]]' "${PYTHON_INVENTORY}"
 if [[ "$PROFILE" == "drawing" ]]; then
   grep -Eiq '^inkscape[[:space:]]' "${DEBIAN_INVENTORY}"
+  grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -Eq '^  Package[[:space:]]+:[[:space:]]+[^[:space:]].*$'
+  if grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'; then
+    echo "ERROR: drawing-profile acknowledgments report Inkscape as not installed." >&2
+    exit 1
+  fi
+else
+  grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'
 fi
 if [[ "$PROFILE" == "full" ]]; then
   grep -Eiq '^pybosl2[[:space:]]' "${PYTHON_INVENTORY}"
