@@ -392,6 +392,10 @@ release tag with different contents.
 A release is complete only after both runtime profiles and their external
 consumer evidence are immutable.
 
+The external test-suite version is independent from the toolchain version. A
+toolchain-only release does not force a test-suite version bump when the
+functional consumer contract is unchanged.
+
 For `v0.5.2` the sequence is:
 
 ```text
@@ -406,10 +410,10 @@ tag docker.scad-toolchain v0.5.2
   -> automatic docker.scad-toolchain.test against :v0.5.2 PASS
   -> mutable Pages /latest/ updated
 
-tag docker.scad-toolchain.test test-v0.5.2-toolchain-v0.5.2
-  -> external suite against both :v0.5.2 profiles PASS
+tag docker.scad-toolchain.test test-v0.5.1-toolchain-v0.5.2
+  -> unchanged released external suite v0.5.1 against both :v0.5.2 profiles PASS
   -> permanent Pages report:
-     /test-v0.5.2-toolchain-v0.5.2/
+     /test-v0.5.1-toolchain-v0.5.2/
 ```
 
 Only after the permanent tagged verification report is green should downstream
