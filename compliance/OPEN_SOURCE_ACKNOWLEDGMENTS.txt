@@ -35,10 +35,6 @@ BOSL2
   Version      : @BOSL2_VERSION@
   Source       : https://github.com/BelfrySCAD/BOSL2
 
-openscad-new-dimensions
-  Commit       : @OPENSCAD_NEW_DIMENSIONS_COMMIT@
-  Source       : https://codeberg.org/adrien-delhorme/openscad-new-dimensions
-
 openscad_docsgen
   Version      : @OPENSCAD_DOCSGEN_VERSION@
   Source       : https://github.com/BelfrySCAD/openscad_docsgen
@@ -50,6 +46,13 @@ Pillow
 SCons
   Version      : @SCONS_VERSION@
   Source       : https://github.com/SCons/scons
+
+DRAWING RUNTIME ADDITIONS
+-------------------------
+
+Inkscape
+  Package      : @INKSCAPE_PACKAGE_VERSION@
+  Source       : https://gitlab.com/inkscape/inkscape
 
 FULL RUNTIME ADDITIONS
 ----------------------
@@ -66,8 +69,8 @@ Shapely
   Version      : @SHAPELY_VERSION@
   Source       : https://github.com/shapely/shapely
 
-For the OpenSCAD-focused profile, full-runtime-only components above are shown
-as "not installed in this profile".
+For profiles that do not install an optional component, its version is shown
+as "not installed" or "not installed in this profile".
 
 PACKAGE INVENTORIES AND TRANSITIVE NOTICES
 ------------------------------------------

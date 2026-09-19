@@ -27,8 +27,14 @@ git --version
 printf "SCons      : "
 python3 -c 'import importlib.metadata as m; print(m.version("SCons"))'
 
+printf "Inkscape   : "
+if command -v inkscape >/dev/null 2>&1; then
+  inkscape --version 2>&1 | head -n1
+else
+  echo "not installed"
+fi
+
 printf "BOSL2      : v%s\n" "${BOSL2_VERSION:-unknown}"
-printf "Dimensions : %s\n" "${OPENSCAD_NEW_DIMENSIONS_COMMIT:-not installed}"
 
 printf "pybosl2    : "
 if PYTHONPATH="${PYTHONPATH:-/opt/python-libs}" python3 -c 'import importlib.metadata as m; m.version("pybosl2")' >/dev/null 2>&1; then
@@ -52,7 +58,6 @@ python3 -c 'import importlib.metadata as m; print(m.version("Pillow"))'
 
 printf "OPENSCADPATH: %s\n" "${OPENSCADPATH:-<unset>}"
 printf "BOSL2_ROOT  : %s\n" "${BOSL2_ROOT:-<unset>}"
-printf "DIMENSIONS_ROOT: %s\n" "${OPENSCAD_NEW_DIMENSIONS_ROOT:-<unset>}"
 printf "PYTHONPATH : %s\n" "${PYTHONPATH:-<unset>}"
 printf "Acknowledgments TXT: %s\n" "/usr/share/doc/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt"
 printf "Acknowledgments PDF: %s\n" "/usr/share/doc/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf"

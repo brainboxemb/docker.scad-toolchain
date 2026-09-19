@@ -56,12 +56,12 @@ def template_values(profile: str) -> dict[str, str]:
         "OPENSCAD_PACKAGE_VERSION": package_version("openscad-nightly"),
         "PYTHONSCAD_VERSION": environment("PYTHONSCAD_VERSION"),
         "BOSL2_VERSION": environment("BOSL2_VERSION"),
-        "OPENSCAD_NEW_DIMENSIONS_COMMIT": environment("OPENSCAD_NEW_DIMENSIONS_COMMIT"),
         "PYBOSL2_VERSION": environment("PYBOSL2_VERSION"),
         "SHAPELY_VERSION": environment("SHAPELY_VERSION"),
         "OPENSCAD_DOCSGEN_VERSION": environment("OPENSCAD_DOCSGEN_VERSION"),
         "PILLOW_VERSION": environment("PILLOW_VERSION"),
         "SCONS_VERSION": environment("SCONS_VERSION"),
+        "INKSCAPE_PACKAGE_VERSION": package_version("inkscape"),
     }
 
 
@@ -116,14 +116,17 @@ def direct_license_groups(profile: str) -> list[tuple[str, list[Path]]]:
             ]),
         ),
         ("BOSL2", matching_files(Path("/opt/openscad-libraries/BOSL2"))),
-        (
-            "openscad-new-dimensions",
-            matching_files(Path("/opt/openscad-libraries/openscad-new-dimensions")),
-        ),
         ("openscad_docsgen", distribution_license_files("openscad_docsgen")),
         ("Pillow", distribution_license_files("Pillow")),
         ("SCons", distribution_license_files("SCons")),
     ]
+    if profile == "drawing":
+        groups.append(
+            (
+                "Inkscape",
+                first_existing_globs(["/usr/share/doc/inkscape/copyright"]),
+            )
+        )
     if profile == "full":
         upstream_copying = Path("/opt/pythonscad/COPYING.upstream")
         groups.extend([
@@ -332,7 +335,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--profile", choices=("openscad", "full"), required=True)
+    parser.add_argument("--profile", choices=("openscad", "drawing", "full"), required=True)
     args = parser.parse_args()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
