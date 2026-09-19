@@ -1,4 +1,4 @@
-ARG TOOLCHAIN_VERSION=0.6.1
+ARG TOOLCHAIN_VERSION=0.7.0
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
 ARG PYBOSL2_VERSION=0.6.7
@@ -100,11 +100,18 @@ ARG TOOLCHAIN_VERSION
 ARG DRAWSVG_VERSION
 
 LABEL org.opencontainers.image.title="SCAD toolchain drawing runtime"
-LABEL org.opencontainers.image.description="OpenSCAD toolchain plus deterministic technical-drawing publication with Inkscape"
+LABEL org.opencontainers.image.description="OpenSCAD toolchain plus FreeCAD HLR and deterministic technical-drawing publication"
 LABEL org.opencontainers.image.scad-toolchain-profile="drawing"
 
-RUN apt-get update && apt-get install -y --no-install-recommends inkscape \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      inkscape \
+      freecad \
+    && rm -rf /var/lib/apt/lists/* \
+    && set -eux; \
+      freecad_real="$(command -v FreeCADCmd || command -v freecadcmd)"; \
+      test -n "$freecad_real"; \
+      ln -sf "$freecad_real" /usr/local/bin/freecadcmd; \
+      freecadcmd --version
 
 # Python owns readable SVG composition. Inkscape remains the separate
 # rendering/export layer, so drawsvg is installed without raster extras.

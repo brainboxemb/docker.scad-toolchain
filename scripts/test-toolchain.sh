@@ -53,15 +53,22 @@ grep -Eiq '^Pillow[[:space:]]' "${PYTHON_INVENTORY}"
 grep -Eiq '^SCons[[:space:]]' "${PYTHON_INVENTORY}"
 if [[ "$PROFILE" == "drawing" ]]; then
   grep -Eiq '^inkscape[[:space:]]' "${DEBIAN_INVENTORY}"
+  grep -Eiq '^freecad[[:space:]]' "${DEBIAN_INVENTORY}"
   grep -Eiq '^drawsvg[[:space:]]' "${PYTHON_INVENTORY}"
   grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -Eq '^  Package[[:space:]]+:[[:space:]]+[^[:space:]].*$'
+  grep -A2 '^FreeCAD$' "${ACK_TXT}" | grep -Eq '^  Package[[:space:]]+:[[:space:]]+[^[:space:]].*$'
   grep -A2 '^drawsvg$' "${ACK_TXT}" | grep -Eq '^  Version[[:space:]]+:[[:space:]]+[^[:space:]].*$'
   if grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'; then
     echo "ERROR: drawing-profile acknowledgments report Inkscape as not installed." >&2
     exit 1
   fi
+  if grep -A2 '^FreeCAD$' "${ACK_TXT}" | grep -q 'not installed in this profile'; then
+    echo "ERROR: drawing-profile acknowledgments report FreeCAD as not installed." >&2
+    exit 1
+  fi
 else
   grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'
+  grep -A2 '^FreeCAD$' "${ACK_TXT}" | grep -q 'not installed in this profile'
   grep -A2 '^drawsvg$' "${ACK_TXT}" | grep -q 'not installed in this profile'
 fi
 if [[ "$PROFILE" == "full" ]]; then
@@ -155,6 +162,16 @@ openscad -o "$OUT/bosl2.stl" "$ROOT/test/bosl2.scad"
 test -s "$OUT/bosl2.stl"
 
 if [[ "$PROFILE" == "drawing" ]]; then
+  echo
+  echo "== FreeCAD headless TechDraw HLR =="
+  command -v freecadcmd >/dev/null
+  freecadcmd --version
+  FREECAD_HLR_OUT="$OUT/freecad-hlr.svg" \
+    freecadcmd "$ROOT/test/freecad_hlr_smoke.py"
+  test -s "$OUT/freecad-hlr.svg"
+  grep -qi '<svg' "$OUT/freecad-hlr.svg"
+  grep -q 'FREECAD_HLR' "$OUT/freecad-hlr.svg"
+
   echo
   echo "== Drawing publication: OpenSCAD SVG -> Inkscape PNG/PDF =="
   command -v inkscape >/dev/null
