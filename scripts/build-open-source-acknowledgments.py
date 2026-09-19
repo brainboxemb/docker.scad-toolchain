@@ -45,7 +45,7 @@ def os_pretty_name() -> str:
 
 
 def package_version(name: str) -> str:
-    return command("dpkg-query", "-W", "-f=\${Version}", name)
+    return command("dpkg-query", "-W", "-f=${Version}", name)
 
 
 def template_values(profile: str) -> dict[str, str]:
@@ -135,7 +135,7 @@ def direct_license_groups(profile: str) -> list[tuple[str, list[Path]]]:
 
 
 def write_package_inventories(output_dir: Path) -> None:
-    debian = command("dpkg-query", "-W", "-f=\${Package}\\t\${Version}\\n")
+    debian = command("dpkg-query", "-W", "-f=${Package}\\t${Version}\\n")
     (output_dir / "DEBIAN_PACKAGES.txt").write_text(
         debian.rstrip() + "\n", encoding="utf-8"
     )
