@@ -11,6 +11,7 @@ on:
       - 'scripts/**'
       - 'test/**'
       - 'AGENTS.md'
+      - 'compliance/**'
       - '.github/workflows/build.yml'
   pull_request:
     paths:
@@ -19,6 +20,7 @@ on:
       - 'scripts/**'
       - 'test/**'
       - 'AGENTS.md'
+      - 'compliance/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -49,6 +51,7 @@ jobs:
           source versions.env
           set +a
 
+          echo "toolchain=${TOOLCHAIN_VERSION}" >> "$GITHUB_OUTPUT"
           echo "pythonscad=${PYTHONSCAD_VERSION}" >> "$GITHUB_OUTPUT"
           echo "bosl2=${BOSL2_VERSION}" >> "$GITHUB_OUTPUT"
           echo "openscad_new_dimensions=${OPENSCAD_NEW_DIMENSIONS_COMMIT}" >> "$GITHUB_OUTPUT"
@@ -102,6 +105,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           build-args: |
+            TOOLCHAIN_VERSION=${{ steps.versions.outputs.toolchain }}
             BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
             OPENSCAD_NEW_DIMENSIONS_COMMIT=${{ steps.versions.outputs.openscad_new_dimensions }}
             OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
@@ -120,6 +124,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           build-args: |
+            TOOLCHAIN_VERSION=${{ steps.versions.outputs.toolchain }}
             PYTHONSCAD_VERSION=${{ steps.versions.outputs.pythonscad }}
             BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
             PYBOSL2_VERSION=${{ steps.versions.outputs.pybosl2 }}
@@ -161,6 +166,49 @@ jobs:
             --format='{{.RepoTags}} {{.Size}} bytes' \
             "$OPENSCAD_IMAGE" \
             "$FULL_IMAGE"
+
+      - name: Extract release acknowledgment documents
+        timeout-minutes: 2
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          OPENSCAD_TAGS: ${{ steps.meta_openscad.outputs.tags }}
+          FULL_TAGS: ${{ steps.meta_full.outputs.tags }}
+        run: |
+          set -euo pipefail
+
+          OPENSCAD_IMAGE="$(printf '%s\n' "$OPENSCAD_TAGS" | head -n1)"
+          FULL_IMAGE="$(printf '%s\n' "$FULL_TAGS" | head -n1)"
+          mkdir -p release-compliance
+
+          for entry in \
+            "openscad:$OPENSCAD_IMAGE" \
+            "full:$FULL_IMAGE"
+          do
+            profile="${entry%%:*}"
+            image="${entry#*:}"
+            for file in \
+              OPEN_SOURCE_ACKNOWLEDGMENTS.txt \
+              OPEN_SOURCE_ACKNOWLEDGMENTS.pdf \
+              DIRECT_LICENSE_FILES.txt \
+              DEBIAN_PACKAGES.txt \
+              PYTHON_DISTRIBUTIONS.txt
+            do
+              docker run --rm "$image" \
+                cat "/usr/share/doc/scad-toolchain/$file" \
+                > "release-compliance/${profile}-$file"
+            done
+          done
+
+      - name: Upload release acknowledgment documents
+        timeout-minutes: 2
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: open-source-acknowledgments-${{ github.ref_name }}
+          path: release-compliance/
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Trigger external consumer tests
         timeout-minutes: 2

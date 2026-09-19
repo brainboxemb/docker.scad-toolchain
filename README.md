@@ -68,6 +68,31 @@ project with PythonSCAD capability
 Do not maintain repository-name allowlists in CI. Runtime choice should follow
 the effective project capabilities/configuration.
 
+## Open-source acknowledgments
+
+Both distributed runtime profiles carry the same release documentation
+contract under:
+
+```text
+/usr/share/doc/scad-toolchain/
+  OPEN_SOURCE_ACKNOWLEDGMENTS.txt
+  OPEN_SOURCE_ACKNOWLEDGMENTS.pdf
+  DIRECT_LICENSE_FILES.txt
+  DEBIAN_PACKAGES.txt
+  PYTHON_DISTRIBUTIONS.txt
+```
+
+`compliance/OPEN_SOURCE_ACKNOWLEDGMENTS.txt` is the maintained authoring input.
+The image build injects the actual release/profile versions, appends the
+license/copyright files for the direct runtime components and generates the PDF
+from the same assembled text with a standard-library-only generator.
+
+The normal Ubuntu package copyright files remain present under
+`/usr/share/doc/*/copyright`. Release-tag builds also retain the generated TXT,
+PDF and inventory files as a CI release artifact for both profiles.
+
+`scad-toolchain-info` prints the in-image TXT/PDF paths.
+
 ## Inspecting a runtime
 
 Both profiles expose:
@@ -355,7 +380,7 @@ versioning.
 Current development target:
 
 ```text
-v0.5.0
+v0.5.2
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
@@ -367,7 +392,7 @@ release tag with different contents.
 A release is complete only after both runtime profiles and their external
 consumer evidence are immutable.
 
-For `v0.5.0` the sequence is:
+For `v0.5.2` the sequence is:
 
 ```text
 main
@@ -375,16 +400,16 @@ main
   -> internal smoke PASS
   -> docker.scad-toolchain.test against :edge PASS
 
-tag docker.scad-toolchain v0.5.0
-  -> publish both :v0.5.0 profiles
+tag docker.scad-toolchain v0.5.2
+  -> publish both :v0.5.2 profiles
   -> internal smoke PASS
-  -> automatic docker.scad-toolchain.test against :v0.5.0 PASS
+  -> automatic docker.scad-toolchain.test against :v0.5.2 PASS
   -> mutable Pages /latest/ updated
 
-tag docker.scad-toolchain.test test-v0.5.0-toolchain-v0.5.0
-  -> external suite against both :v0.5.0 profiles PASS
+tag docker.scad-toolchain.test test-v0.5.2-toolchain-v0.5.2
+  -> external suite against both :v0.5.2 profiles PASS
   -> permanent Pages report:
-     /test-v0.5.0-toolchain-v0.5.0/
+     /test-v0.5.2-toolchain-v0.5.2/
 ```
 
 Only after the permanent tagged verification report is green should downstream
@@ -394,7 +419,7 @@ Create the runtime release through the permanent GitHub Actions Release
 workflow using:
 
 ```text
-version      v0.5.0
+version      v0.5.2
 release_sha  exact already-verified main commit SHA
 ```
 

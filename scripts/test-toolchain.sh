@@ -19,6 +19,29 @@ case "$PROFILE" in
 esac
 
 echo
+echo "== Open-source acknowledgment documents =="
+ACK_ROOT="/usr/share/doc/scad-toolchain"
+for path in \
+  "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt" \
+  "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf" \
+  "${ACK_ROOT}/DIRECT_LICENSE_FILES.txt" \
+  "${ACK_ROOT}/DEBIAN_PACKAGES.txt" \
+  "${ACK_ROOT}/PYTHON_DISTRIBUTIONS.txt"
+do
+  test -s "${path}"
+done
+
+grep -q 'SCAD TOOLCHAIN - OPEN SOURCE ACKNOWLEDGMENTS' \
+  "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt"
+grep -q "Runtime profile   : ${PROFILE}" \
+  "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt"
+head -c 8 "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf" | grep -q '%PDF-1.4'
+tail -c 64 "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf" | grep -q '%%EOF'
+printf 'Acknowledgments: %s and %s\n' \
+  "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt" \
+  "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf"
+
+echo
 echo "== Git smoke test =="
 command -v git >/dev/null
 git --version

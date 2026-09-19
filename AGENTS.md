@@ -63,6 +63,30 @@ port/package, not a wrapper around the installed BOSL2 tree.
 Use BOSL2 `std.scad` as the library entrypoint. Do not use `shapes3d.scad` as a
 standalone entrypoint.
 
+## Open-source distribution documentation
+
+Published container images redistribute third-party software. Treat
+acknowledgment/licensing evidence as part of the runtime release contract.
+
+The maintained source is:
+
+```text
+compliance/OPEN_SOURCE_ACKNOWLEDGMENTS.txt
+```
+
+The build owns the generated TXT/PDF and package inventories under
+`/usr/share/doc/scad-toolchain`. Never hand-edit the generated PDF. Keep the
+generator standard-library-only so producing compliance documentation does not
+introduce another runtime package solely for documentation.
+
+A direct runtime component must have discoverable license/copyright material in
+the built image. If the generator cannot find it, fix the distribution/source
+packaging rather than weakening the check.
+
+System-package notices remain with the installed packages under
+`/usr/share/doc/*/copyright`; inventories make the actual transitive image
+contents auditable.
+
 ## Release discipline
 
 A toolchain release is not accepted merely because an image tag exists.
