@@ -1,7 +1,6 @@
-ARG TOOLCHAIN_VERSION=0.5.3
+ARG TOOLCHAIN_VERSION=0.6.0
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
-ARG OPENSCAD_NEW_DIMENSIONS_COMMIT=d37828e26df6067fbd872e8e291c6b0b19298243
 ARG PYBOSL2_VERSION=0.6.7
 ARG SHAPELY_VERSION=2.1.2
 ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
@@ -13,7 +12,6 @@ FROM ubuntu:24.04 AS openscad
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TOOLCHAIN_VERSION
 ARG BOSL2_VERSION
-ARG OPENSCAD_NEW_DIMENSIONS_COMMIT
 ARG OPENSCAD_DOCSGEN_VERSION
 ARG PILLOW_VERSION
 ARG SCONS_VERSION
@@ -54,27 +52,6 @@ RUN set -eux; \
     rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
     test -f /opt/openscad-libraries/BOSL2/std.scad
 
-# openscad-new-dimensions is a shared OpenSCAD-facing runtime library.
-# Fetch one immutable Codeberg commit directly; consumers use it through the
-# existing OPENSCADPATH instead of carrying a repository-local mirror.
-RUN set -eux; \
-    test -n "${OPENSCAD_NEW_DIMENSIONS_COMMIT}"; \
-    git init -q /tmp/openscad-new-dimensions; \
-    git -C /tmp/openscad-new-dimensions remote add origin \
-      "https://codeberg.org/adrien-delhorme/openscad-new-dimensions.git"; \
-    git -C /tmp/openscad-new-dimensions fetch --depth 1 origin \
-      "${OPENSCAD_NEW_DIMENSIONS_COMMIT}"; \
-    git -C /tmp/openscad-new-dimensions checkout -q --detach FETCH_HEAD; \
-    resolved="$(git -C /tmp/openscad-new-dimensions rev-parse HEAD)"; \
-    test "${resolved}" = "${OPENSCAD_NEW_DIMENSIONS_COMMIT}"; \
-    test -f /tmp/openscad-new-dimensions/dimensions.scad; \
-    test -f /tmp/openscad-new-dimensions/demo/demo.scad; \
-    rm -rf /tmp/openscad-new-dimensions/.git; \
-    mv /tmp/openscad-new-dimensions /opt/openscad-libraries/openscad-new-dimensions
-
-ENV OPENSCAD_NEW_DIMENSIONS_ROOT=/opt/openscad-libraries/openscad-new-dimensions
-ENV OPENSCAD_NEW_DIMENSIONS_COMMIT=${OPENSCAD_NEW_DIMENSIONS_COMMIT}
-
 # Shared OpenSCAD project tooling. Pillow remains here because the public
 # scad-image-watermark command is part of normal OpenSCAD publication.
 RUN python3 -m pip install \
@@ -112,6 +89,28 @@ RUN chmod +x \
       --profile openscad
 
 WORKDIR /work
+CMD ["scad-toolchain-info"]
+
+
+FROM openscad AS drawing
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG TOOLCHAIN_VERSION
+
+LABEL org.opencontainers.image.title="SCAD toolchain drawing runtime"
+LABEL org.opencontainers.image.description="OpenSCAD toolchain plus deterministic technical-drawing publication with Inkscape"
+LABEL org.opencontainers.image.scad-toolchain-profile="drawing"
+
+RUN apt-get update && apt-get install -y --no-install-recommends inkscape \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV SCAD_TOOLCHAIN_PROFILE=drawing
+
+RUN build-open-source-acknowledgments \
+      --input /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt \
+      --output-dir /usr/share/doc/scad-toolchain \
+      --profile drawing
+
 CMD ["scad-toolchain-info"]
 
 

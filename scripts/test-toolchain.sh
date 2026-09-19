@@ -11,7 +11,7 @@ echo
 echo "== Runtime profile =="
 printf 'SCAD_TOOLCHAIN_PROFILE=%s\n' "$PROFILE"
 case "$PROFILE" in
-  openscad|full) ;;
+  openscad|drawing|full) ;;
   *)
     echo "ERROR: unsupported SCAD_TOOLCHAIN_PROFILE=${PROFILE}" >&2
     exit 1
@@ -51,6 +51,9 @@ grep -Eq '^openscad-nightly[[:space:]]' "${DEBIAN_INVENTORY}"
 grep -Eiq '^openscad[-_]docsgen[[:space:]]' "${PYTHON_INVENTORY}"
 grep -Eiq '^Pillow[[:space:]]' "${PYTHON_INVENTORY}"
 grep -Eiq '^SCons[[:space:]]' "${PYTHON_INVENTORY}"
+if [[ "$PROFILE" == "drawing" ]]; then
+  grep -Eiq '^inkscape[[:space:]]' "${DEBIAN_INVENTORY}"
+fi
 if [[ "$PROFILE" == "full" ]]; then
   grep -Eiq '^pybosl2[[:space:]]' "${PYTHON_INVENTORY}"
   grep -Eiq '^Shapely[[:space:]]' "${PYTHON_INVENTORY}"
@@ -141,24 +144,31 @@ echo "== BOSL2 OpenSCAD smoke test =="
 openscad -o "$OUT/bosl2.stl" "$ROOT/test/bosl2.scad"
 test -s "$OUT/bosl2.stl"
 
-echo
-echo "== openscad-new-dimensions SVG smoke test =="
-test -n "${OPENSCAD_NEW_DIMENSIONS_ROOT:-}"
-test -n "${OPENSCAD_NEW_DIMENSIONS_COMMIT:-}"
-test -f "${OPENSCAD_NEW_DIMENSIONS_ROOT}/dimensions.scad"
+if [[ "$PROFILE" == "drawing" ]]; then
+  echo
+  echo "== Drawing publication: OpenSCAD SVG -> Inkscape PNG/PDF =="
+  command -v inkscape >/dev/null
+  inkscape --version
 
-echo "Public declarations in dimensions.scad:"
-grep -E '^[[:space:]]*(module|function)[[:space:]]+' \
-  "${OPENSCAD_NEW_DIMENSIONS_ROOT}/dimensions.scad" \
-  | head -n 40 || true
+  openscad -o "$OUT/drawing-source.svg" "$ROOT/test/drawing_2d.scad"
+  test -s "$OUT/drawing-source.svg"
+  grep -qi '<svg' "$OUT/drawing-source.svg"
 
-openscad \
-  -o "$OUT/openscad-new-dimensions.svg" \
-  "$ROOT/test/dimensions_2d.scad"
+  inkscape "$OUT/drawing-source.svg" --export-area-page --export-type=png --export-filename="$OUT/drawing-output.png"
+  inkscape "$OUT/drawing-source.svg" --export-area-page --export-type=pdf --export-filename="$OUT/drawing-output.pdf"
 
-test -s "$OUT/openscad-new-dimensions.svg"
-grep -qi '<svg' "$OUT/openscad-new-dimensions.svg"
-printf 'openscad-new-dimensions=%s\n' "$OPENSCAD_NEW_DIMENSIONS_COMMIT"
+  test -s "$OUT/drawing-output.png"
+  test -s "$OUT/drawing-output.pdf"
+  python3 - "$OUT/drawing-output.png" "$OUT/drawing-output.pdf" <<'PY'
+from pathlib import Path
+import sys
+from PIL import Image
+with Image.open(Path(sys.argv[1])) as image:
+    assert image.format == "PNG"
+assert Path(sys.argv[2]).read_bytes().startswith(b"%PDF-")
+print("Inkscape PNG/PDF drawing export validated")
+PY
+fi
 
 if [[ "$PROFILE" == "full" ]]; then
   echo
@@ -181,7 +191,7 @@ if [[ "$PROFILE" == "full" ]]; then
 else
   echo
   echo "== PythonSCAD-specific smoke tests =="
-  echo "Skipped for OpenSCAD-focused runtime."
+  echo "Skipped for non-full runtime."
 fi
 
 echo

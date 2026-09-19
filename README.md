@@ -4,7 +4,7 @@ Shared Docker toolchain for reproducible scripted CAD builds and renders.
 
 The repository publishes a related runtime-image family from one multi-stage
 source. Project-specific build and dependency policy belongs outside this
-repository.
+repository. Drawing/publication tooling is isolated in an opt-in profile.
 
 ## Runtime profiles
 
@@ -22,10 +22,30 @@ It contains the capabilities needed by normal OpenSCAD projects:
 - Python 3 and Git;
 - Xvfb plus rendering/font dependencies;
 - BOSL2 for OpenSCAD;
-- `openscad-new-dimensions` for dimensioned 2D OpenSCAD/SVG drawings;
 - `openscad_docsgen` / `openscad-docsgen` / `openscad-mdimggen`;
 - Pillow and `scad-image-watermark`;
 - SCons.
+
+### Drawing runtime
+
+Published as:
+
+```text
+ghcr.io/brainboxemb/scad-toolchain-drawing:<version>
+```
+
+It extends the OpenSCAD-focused runtime with Inkscape CLI for deterministic
+technical-drawing rendering and export. The intended pipeline is:
+
+```text
+OpenSCAD geometry/projections
+    -> scripted Python/SVG composition
+    -> Inkscape CLI
+    -> SVG / PNG / PDF
+```
+
+The drawing profile deliberately does not rely on an OpenSCAD dimensioning
+library; dimensioning and sheet composition belong to the scripted SVG layer.
 
 ### Full / dual runtime
 
@@ -60,6 +80,9 @@ Conceptually:
 ```text
 OpenSCAD-only project
     -> scad-toolchain-openscad:<version>
+
+project with technical-drawing publication capability
+    -> scad-toolchain-drawing:<version>
 
 project with PythonSCAD capability
     -> scad-toolchain:<version>
@@ -96,7 +119,7 @@ Release page. Supporting license/package inventories are attached as one ZIP.
 
 ## Inspecting a runtime
 
-Both profiles expose:
+All runtime profiles expose:
 
 ```bash
 scad-toolchain-info
@@ -107,7 +130,7 @@ components as `not installed` in the OpenSCAD profile.
 
 ## Public runtime interface
 
-Shared commands available in both profiles include:
+Shared commands available in all runtime profiles include:
 
 ```text
 openscad
@@ -118,6 +141,12 @@ scad-toolchain-info
 openscad-docsgen
 openscad-mdimggen
 scad-image-watermark
+```
+
+The drawing profile additionally exposes:
+
+```text
+inkscape
 ```
 
 The full profile additionally exposes:
@@ -150,30 +179,9 @@ scad-image-watermark input.png output.png --text "© 2026 brainboxemb"
 The consuming project decides whether watermarking is enabled and what text is
 used.
 
-## openscad-new-dimensions
-
-The Codeberg-hosted `adrien-delhorme/openscad-new-dimensions` library is
-installed in both runtime profiles as a normal OpenSCAD library at:
-
-```text
-/opt/openscad-libraries/openscad-new-dimensions
-```
-
-The exact upstream commit is pinned in `versions.env` and exposed through:
-
-```text
-OPENSCAD_NEW_DIMENSIONS_ROOT
-OPENSCAD_NEW_DIMENSIONS_COMMIT
-```
-
-Because `OPENSCADPATH=/opt/openscad-libraries`, consumers can include the
-library without carrying a Codeberg submodule or GitHub mirror. The internal
-smoke test runs the upstream `demo/demo.scad` and requires OpenSCAD to export
-a non-empty SVG.
-
 ## BOSL2
 
-BOSL2 is installed as a normal OpenSCAD library in both profiles. Public
+BOSL2 is installed as a normal OpenSCAD library in all runtime profiles. Public
 environment variables expose it:
 
 ```text
@@ -243,7 +251,7 @@ support it.
 
 ## OpenSCAD documentation tooling
 
-Both profiles include the upstream `openscad_docsgen` package and expose:
+All runtime profiles include the upstream `openscad_docsgen` package and expose:
 
 ```text
 openscad-docsgen
@@ -290,11 +298,22 @@ Build the OpenSCAD profile:
 docker build \
   --target openscad \
   --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
-  --build-arg OPENSCAD_NEW_DIMENSIONS_COMMIT="$OPENSCAD_NEW_DIMENSIONS_COMMIT" \
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
   --build-arg PILLOW_VERSION="$PILLOW_VERSION" \
   --build-arg SCONS_VERSION="$SCONS_VERSION" \
   -t scad-toolchain-openscad:local .
+```
+
+Build the drawing profile:
+
+```bash
+docker build \\
+  --target drawing \\
+  --build-arg BOSL2_VERSION="$BOSL2_VERSION" \\
+  --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \\
+  --build-arg PILLOW_VERSION="$PILLOW_VERSION" \\
+  --build-arg SCONS_VERSION="$SCONS_VERSION" \\
+  -t scad-toolchain-drawing:local .
 ```
 
 Build the full profile:
@@ -304,7 +323,6 @@ docker build \
   --target full \
   --build-arg PYTHONSCAD_VERSION="$PYTHONSCAD_VERSION" \
   --build-arg BOSL2_VERSION="$BOSL2_VERSION" \
-  --build-arg OPENSCAD_NEW_DIMENSIONS_COMMIT="$OPENSCAD_NEW_DIMENSIONS_COMMIT" \
   --build-arg PYBOSL2_VERSION="$PYBOSL2_VERSION" \
   --build-arg SHAPELY_VERSION="$SHAPELY_VERSION" \
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \
@@ -334,7 +352,8 @@ The smoke script detects the profile and verifies the appropriate contract.
 `brainboxemb/docker.scad-toolchain.test` is the external consumer contract for
 the published image family.
 
-It runs the shared OpenSCAD-facing contract against both profiles and runs the
+It runs the shared OpenSCAD-facing contract against all three profiles,
+qualifies the Inkscape publication path only in the drawing profile, and runs
 PythonSCAD/pybosl2-specific coverage only against the full profile.
 
 For Migration 005 the qualified candidate measured:
@@ -356,10 +375,10 @@ of normal CI.
 
 ```text
 docker.scad-toolchain
-    -> builds and publishes both CAD runtime profiles
+    -> builds and publishes the OpenSCAD, drawing and full CAD runtime profiles
 
 docker.scad-toolchain.test
-    -> externally validates both published profiles
+    -> externally validates all published profiles
     -> publishes verification reports
 
 tool.scad-project
@@ -381,7 +400,7 @@ versioning.
 Current development target:
 
 ```text
-v0.5.3
+v0.6.0
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
@@ -390,36 +409,36 @@ Release history lives in [`CHANGELOG.md`](CHANGELOG.md).
 Released Git tags and GHCR image tags are immutable. Never replace an existing
 release tag with different contents.
 
-A release is complete only after both runtime profiles and their external
-consumer evidence are immutable.
+A release is complete only after all published runtime profiles and their
+external consumer evidence are immutable.
 
 The external test-suite version is independent from the toolchain version. A
 toolchain-only release does not force a test-suite version bump when the
 functional consumer contract is unchanged.
 
-For `v0.5.3` the sequence is:
+For `v0.6.0` the sequence is:
 
 ```text
 main
-  -> publish both :edge profiles
-  -> internal smoke PASS
-  -> docker.scad-toolchain.test against :edge PASS
+  -> publish OpenSCAD, drawing and full :edge profiles
+  -> internal smoke PASS for all three
+  -> docker.scad-toolchain.test against :edge PASS for all three
 
-tag docker.scad-toolchain v0.5.3
-  -> publish both :v0.5.3 profiles
-  -> internal smoke PASS
-  -> publish GitHub Release with downloadable acknowledgment TXT/PDF assets
-  -> automatic docker.scad-toolchain.test against :v0.5.3 PASS
+tag docker.scad-toolchain v0.6.0
+  -> publish OpenSCAD, drawing and full :v0.6.0 profiles
+  -> internal smoke PASS for all three
+  -> publish GitHub Release with profile-specific acknowledgment TXT/PDF assets
+  -> automatic docker.scad-toolchain.test against :v0.6.0 PASS
   -> mutable Pages /latest/ updated
 
-tag docker.scad-toolchain.test test-v0.5.1-toolchain-v0.5.3
-  -> unchanged released external suite v0.5.1 against both :v0.5.3 profiles PASS
+tag docker.scad-toolchain.test test-v0.6.0-toolchain-v0.6.0
+  -> complete external suite against all three :v0.6.0 profiles PASS
   -> permanent Pages report:
-     /test-v0.5.1-toolchain-v0.5.3/
+     /test-v0.6.0-toolchain-v0.6.0/
 ```
 
-Only after the permanent tagged verification report is green should downstream
-consumers such as `tool.scad-project` move to the new runtime release.
+Only after that permanent three-profile verification record is green should
+downstream consumers such as `tool.scad-project` move to v0.6.0.
 
 Create the runtime release through the permanent GitHub Actions Release
 workflow using:

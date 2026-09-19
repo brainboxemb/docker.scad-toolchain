@@ -36,6 +36,7 @@ Consumers should depend on stable public commands, not internal image paths:
 ```text
 openscad
 pythonscad
+inkscape  # drawing profile only
 python3
 git
 scad-toolchain-info
@@ -46,6 +47,11 @@ scad-image-watermark
 
 When a new capability is intended for consumers, expose a stable interface and
 add real external consumer coverage in `docker.scad-toolchain.test`.
+
+Keep optional publication tooling in a dedicated runtime profile when it would
+otherwise enlarge normal CAD builds. The drawing profile owns Inkscape; OpenSCAD
+owns CAD geometry/projections, while scripted SVG composition owns dimensions,
+leaders, sheet layout and annotations.
 
 ## Library/runtime paths
 
@@ -99,11 +105,11 @@ A toolchain release is not accepted merely because an image tag exists.
 
 Required sequence:
 
-1. current `main` publishes/tests `:edge`;
-2. external consumer suite passes against `:edge`;
+1. current `main` publishes/tests every runtime profile on `:edge`;
+2. external consumer suite passes against every published `:edge` profile;
 3. create the immutable toolchain tag through the permanent release workflow;
-4. build/publish/test that exact immutable image;
-5. external consumer suite passes against the exact immutable image;
+4. build/publish/test every runtime profile for that exact immutable tag;
+5. external consumer suite passes against every exact immutable profile;
 6. create the matching immutable test-suite tag and permanent evidence;
 7. only then advance downstream consumers.
 

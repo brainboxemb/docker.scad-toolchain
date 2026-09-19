@@ -54,7 +54,6 @@ jobs:
           echo "toolchain=${TOOLCHAIN_VERSION}" >> "$GITHUB_OUTPUT"
           echo "pythonscad=${PYTHONSCAD_VERSION}" >> "$GITHUB_OUTPUT"
           echo "bosl2=${BOSL2_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "openscad_new_dimensions=${OPENSCAD_NEW_DIMENSIONS_COMMIT}" >> "$GITHUB_OUTPUT"
           echo "pybosl2=${PYBOSL2_VERSION}" >> "$GITHUB_OUTPUT"
           echo "shapely=${SHAPELY_VERSION}" >> "$GITHUB_OUTPUT"
           echo "docsgen=${OPENSCAD_DOCSGEN_VERSION}" >> "$GITHUB_OUTPUT"
@@ -85,6 +84,17 @@ jobs:
             type=ref,event=tag
             type=sha,prefix=sha-
 
+      - name: Docker metadata — drawing runtime
+        timeout-minutes: 2
+        id: meta_drawing
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/scad-toolchain-drawing
+          tags: |
+            type=raw,value=edge,enable=${{ github.ref == 'refs/heads/main' }}
+            type=ref,event=tag
+            type=sha,prefix=sha-
+
       - name: Docker metadata — full runtime
         timeout-minutes: 2
         id: meta_full
@@ -107,12 +117,29 @@ jobs:
           build-args: |
             TOOLCHAIN_VERSION=${{ steps.versions.outputs.toolchain }}
             BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
-            OPENSCAD_NEW_DIMENSIONS_COMMIT=${{ steps.versions.outputs.openscad_new_dimensions }}
             OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
           tags: ${{ steps.meta_openscad.outputs.tags }}
           labels: ${{ steps.meta_openscad.outputs.labels }}
+          cache-from: type=gha
+
+      - name: Build drawing runtime
+        timeout-minutes: 10
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: drawing
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          build-args: |
+            TOOLCHAIN_VERSION=${{ steps.versions.outputs.toolchain }}
+            BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
+            OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
+            PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
+            SCONS_VERSION=${{ steps.versions.outputs.scons }}
+          tags: ${{ steps.meta_drawing.outputs.tags }}
+          labels: ${{ steps.meta_drawing.outputs.labels }}
           cache-from: type=gha
 
       - name: Build full runtime
@@ -137,22 +164,30 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Smoke test both published runtime contracts
+      - name: Smoke test published runtime contracts
         timeout-minutes: 7
         shell: bash
         env:
           OPENSCAD_TAGS: ${{ steps.meta_openscad.outputs.tags }}
+          DRAWING_TAGS: ${{ steps.meta_drawing.outputs.tags }}
           FULL_TAGS: ${{ steps.meta_full.outputs.tags }}
         run: |
           set -euo pipefail
 
           OPENSCAD_IMAGE="$(printf '%s\n' "$OPENSCAD_TAGS" | head -n1)"
+          DRAWING_IMAGE="$(printf '%s\n' "$DRAWING_TAGS" | head -n1)"
           FULL_IMAGE="$(printf '%s\n' "$FULL_TAGS" | head -n1)"
 
           echo "OpenSCAD runtime: ${OPENSCAD_IMAGE}"
           docker run --rm \
             -v "$PWD:/work" \
             "$OPENSCAD_IMAGE" \
+            bash /work/scripts/test-toolchain.sh
+
+          echo "Drawing runtime: ${DRAWING_IMAGE}"
+          docker run --rm \
+            -v "$PWD:/work" \
+            "$DRAWING_IMAGE" \
             bash /work/scripts/test-toolchain.sh
 
           echo "Full runtime: ${FULL_IMAGE}"
@@ -165,6 +200,7 @@ jobs:
           docker image inspect \
             --format='{{.RepoTags}} {{.Size}} bytes' \
             "$OPENSCAD_IMAGE" \
+            "$DRAWING_IMAGE" \
             "$FULL_IMAGE"
 
       - name: Prepare open-source release documents
@@ -172,6 +208,7 @@ jobs:
         shell: bash
         env:
           OPENSCAD_TAGS: ${{ steps.meta_openscad.outputs.tags }}
+          DRAWING_TAGS: ${{ steps.meta_drawing.outputs.tags }}
           FULL_TAGS: ${{ steps.meta_full.outputs.tags }}
           TOOLCHAIN_VERSION: ${{ steps.versions.outputs.toolchain }}
         run: |
@@ -179,16 +216,19 @@ jobs:
 
           RELEASE_VERSION="v${TOOLCHAIN_VERSION}"
           OPENSCAD_IMAGE="$(printf '%s\n' "$OPENSCAD_TAGS" | head -n1)"
+          DRAWING_IMAGE="$(printf '%s\n' "$DRAWING_TAGS" | head -n1)"
           FULL_IMAGE="$(printf '%s\n' "$FULL_TAGS" | head -n1)"
 
           rm -rf release-compliance release-assets
           mkdir -p \
             release-compliance/openscad \
+            release-compliance/drawing \
             release-compliance/full \
             release-assets
 
           for entry in \
             "openscad:$OPENSCAD_IMAGE" \
+            "drawing:$DRAWING_IMAGE" \
             "full:$FULL_IMAGE"
           do
             profile="${entry%%:*}"
@@ -231,13 +271,18 @@ jobs:
           PY
 
           test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-openscad-open-source-acknowledgments.pdf"
+          test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-drawing-open-source-acknowledgments.pdf"
           test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-full-open-source-acknowledgments.pdf"
           test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-openscad-open-source-acknowledgments.txt"
+          test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-drawing-open-source-acknowledgments.txt"
           test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-full-open-source-acknowledgments.txt"
           test -s "release-assets/scad-toolchain-${RELEASE_VERSION}-open-source-compliance-support.zip"
 
           head -c 8 \
             "release-assets/scad-toolchain-${RELEASE_VERSION}-openscad-open-source-acknowledgments.pdf" \
+            | grep -q '%PDF-1.4'
+          head -c 8 \
+            "release-assets/scad-toolchain-${RELEASE_VERSION}-drawing-open-source-acknowledgments.pdf" \
             | grep -q '%PDF-1.4'
           head -c 8 \
             "release-assets/scad-toolchain-${RELEASE_VERSION}-full-open-source-acknowledgments.pdf" \
@@ -273,8 +318,8 @@ jobs:
           cat > release-notes.md <<EOF
           SCAD toolchain ${VERSION}
 
-          The OpenSCAD-focused and full runtime images are published under the
-          matching immutable GHCR tag.
+          The OpenSCAD-focused, drawing and full runtime images are published
+          under the matching immutable GHCR tag.
 
           Open-source acknowledgment PDFs and their matching TXT documents are
           attached directly to this release. Supporting license/package
@@ -293,8 +338,10 @@ jobs:
 
           EXPECTED_ASSETS=(
             "scad-toolchain-${VERSION}-openscad-open-source-acknowledgments.pdf"
+            "scad-toolchain-${VERSION}-drawing-open-source-acknowledgments.pdf"
             "scad-toolchain-${VERSION}-full-open-source-acknowledgments.pdf"
             "scad-toolchain-${VERSION}-openscad-open-source-acknowledgments.txt"
+            "scad-toolchain-${VERSION}-drawing-open-source-acknowledgments.txt"
             "scad-toolchain-${VERSION}-full-open-source-acknowledgments.txt"
             "scad-toolchain-${VERSION}-open-source-compliance-support.zip"
           )

@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.6.0` | Optional Inkscape drawing runtime; remove OpenSCAD dimension library from current runtime |
 | `v0.5.3` | Publish acknowledgment TXT/PDF directly as GitHub Release assets |
 | `v0.5.2` | Open-source acknowledgment TXT/PDF and runtime license inventories |
 | `v0.5.1` | Pinned OpenSCAD dimensioning library with SVG smoke coverage |
@@ -21,6 +22,37 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.6.0
+
+### Added
+
+- A third optional runtime profile:
+  `ghcr.io/brainboxemb/scad-toolchain-drawing:<version>`.
+- Inkscape CLI in the drawing profile only.
+- Functional internal coverage for OpenSCAD SVG -> Inkscape PNG/PDF export.
+- Drawing-profile release/compliance output.
+
+### Removed
+
+- `adrien-delhorme/openscad-new-dimensions` from the current runtime line.
+  Technical-drawing dimensions and sheet composition move to the scripted
+  Python/SVG layer instead of maintaining a second drawing implementation
+  inside OpenSCAD.
+
+### Architecture
+
+```text
+OpenSCAD geometry/projections
+    -> scripted Python/SVG composition
+    -> Inkscape CLI
+    -> SVG / PNG / PDF
+```
+
+The normal OpenSCAD profile remains the lightweight CAD runtime. The drawing
+profile extends it only with publication tooling; the full profile continues to
+own PythonSCAD-specific capabilities. Historical immutable releases remain
+unchanged.
 
 ## v0.5.3
 
