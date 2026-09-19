@@ -37,6 +37,24 @@ grep -q "Runtime profile   : ${PROFILE}" \
   "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt"
 head -c 8 "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf" | grep -q '%PDF-1.4'
 tail -c 64 "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf" | grep -q '%%EOF'
+
+ACK_TXT="${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt"
+DEBIAN_INVENTORY="${ACK_ROOT}/DEBIAN_PACKAGES.txt"
+PYTHON_INVENTORY="${ACK_ROOT}/PYTHON_DISTRIBUTIONS.txt"
+
+if grep -Eq '^OpenSCAD package[[:space:]]*: [$]' "${ACK_TXT}"; then
+  echo "ERROR: malformed OpenSCAD package version in acknowledgments." >&2
+  exit 1
+fi
+
+grep -Eq '^openscad-nightly[[:space:]]' "${DEBIAN_INVENTORY}"
+grep -Eiq '^openscad[-_]docsgen[[:space:]]' "${PYTHON_INVENTORY}"
+grep -Eiq '^Pillow[[:space:]]' "${PYTHON_INVENTORY}"
+grep -Eiq '^SCons[[:space:]]' "${PYTHON_INVENTORY}"
+if [[ "$PROFILE" == "full" ]]; then
+  grep -Eiq '^pybosl2[[:space:]]' "${PYTHON_INVENTORY}"
+  grep -Eiq '^Shapely[[:space:]]' "${PYTHON_INVENTORY}"
+fi
 printf 'Acknowledgments: %s and %s\n' \
   "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.txt" \
   "${ACK_ROOT}/OPEN_SOURCE_ACKNOWLEDGMENTS.pdf"
