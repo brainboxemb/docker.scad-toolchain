@@ -1,4 +1,4 @@
-ARG TOOLCHAIN_VERSION=0.6.0
+ARG TOOLCHAIN_VERSION=0.6.1
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
 ARG PYBOSL2_VERSION=0.6.7
@@ -6,6 +6,7 @@ ARG SHAPELY_VERSION=2.1.2
 ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
 ARG SCONS_VERSION=4.11.1
+ARG DRAWSVG_VERSION=2.4.2
 
 FROM ubuntu:24.04 AS openscad
 
@@ -96,6 +97,7 @@ FROM openscad AS drawing
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TOOLCHAIN_VERSION
+ARG DRAWSVG_VERSION
 
 LABEL org.opencontainers.image.title="SCAD toolchain drawing runtime"
 LABEL org.opencontainers.image.description="OpenSCAD toolchain plus deterministic technical-drawing publication with Inkscape"
@@ -104,7 +106,16 @@ LABEL org.opencontainers.image.scad-toolchain-profile="drawing"
 RUN apt-get update && apt-get install -y --no-install-recommends inkscape \
     && rm -rf /var/lib/apt/lists/*
 
+# Python owns readable SVG composition. Inkscape remains the separate
+# rendering/export layer, so drawsvg is installed without raster extras.
+RUN python3 -m pip install \
+      --no-cache-dir \
+      --break-system-packages \
+      "drawsvg==${DRAWSVG_VERSION}" \
+    && python3 -c 'import drawsvg, importlib.metadata as m; assert m.version("drawsvg")'
+
 ENV SCAD_TOOLCHAIN_PROFILE=drawing
+ENV DRAWSVG_VERSION=${DRAWSVG_VERSION}
 
 RUN build-open-source-acknowledgments \
       --input /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt \

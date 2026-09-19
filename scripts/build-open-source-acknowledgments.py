@@ -66,6 +66,11 @@ def template_values(profile: str) -> dict[str, str]:
             if profile == "drawing"
             else "not installed in this profile"
         ),
+        "DRAWSVG_VERSION": (
+            environment("DRAWSVG_VERSION")
+            if profile == "drawing"
+            else "not installed in this profile"
+        ),
     }
 
 
@@ -125,12 +130,13 @@ def direct_license_groups(profile: str) -> list[tuple[str, list[Path]]]:
         ("SCons", distribution_license_files("SCons")),
     ]
     if profile == "drawing":
-        groups.append(
+        groups.extend([
             (
                 "Inkscape",
                 first_existing_globs(["/usr/share/doc/inkscape/copyright"]),
-            )
-        )
+            ),
+            ("drawsvg", distribution_license_files("drawsvg")),
+        ])
     if profile == "full":
         upstream_copying = Path("/opt/pythonscad/COPYING.upstream")
         groups.extend([

@@ -54,6 +54,10 @@ Inkscape
   Package      : @INKSCAPE_PACKAGE_VERSION@
   Source       : https://gitlab.com/inkscape/inkscape
 
+drawsvg
+  Version      : @DRAWSVG_VERSION@
+  Source       : https://github.com/cduck/drawsvg
+
 FULL RUNTIME ADDITIONS
 ----------------------
 

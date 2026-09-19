@@ -59,6 +59,7 @@ jobs:
           echo "docsgen=${OPENSCAD_DOCSGEN_VERSION}" >> "$GITHUB_OUTPUT"
           echo "pillow=${PILLOW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "scons=${SCONS_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "drawsvg=${DRAWSVG_VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         timeout-minutes: 2
@@ -138,6 +139,7 @@ jobs:
             OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
+            DRAWSVG_VERSION=${{ steps.versions.outputs.drawsvg }}
           tags: ${{ steps.meta_drawing.outputs.tags }}
           labels: ${{ steps.meta_drawing.outputs.labels }}
           cache-from: type=gha

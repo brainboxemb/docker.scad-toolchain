@@ -34,6 +34,13 @@ else
   echo "not installed"
 fi
 
+printf "drawsvg    : "
+if python3 -c 'import importlib.metadata as m; m.version("drawsvg")' >/dev/null 2>&1; then
+  python3 -c 'import importlib.metadata as m; print(m.version("drawsvg"))'
+else
+  echo "not installed"
+fi
+
 printf "BOSL2      : v%s\n" "${BOSL2_VERSION:-unknown}"
 
 printf "pybosl2    : "
