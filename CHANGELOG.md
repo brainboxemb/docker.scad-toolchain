@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.5.1` | Pinned OpenSCAD dimensioning library with SVG smoke coverage |
 | `v0.5.0` | Capability-focused OpenSCAD and full/dual runtime image family |
 | `v0.4.1` | Pinned SCons build engine and pre-merge Docker image validation |
 | `v0.4.0` | Lightweight PNG watermark tooling and automatic external-test triggering |
@@ -18,6 +19,26 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.5.1
+
+### Added
+
+- Pinned `adrien-delhorme/openscad-new-dimensions` directly from Codeberg at
+  commit `d37828e26df6067fbd872e8e291c6b0b19298243`.
+- Shared installation under `/opt/openscad-libraries/openscad-new-dimensions`
+  in both runtime profiles.
+- Public `OPENSCAD_NEW_DIMENSIONS_ROOT` and
+  `OPENSCAD_NEW_DIMENSIONS_COMMIT` diagnostics.
+- Internal smoke coverage that exports the upstream dimension-library demo to
+  SVG with OpenSCAD.
+
+### Purpose
+
+Dimensioned 2D drawings are a generic OpenSCAD runtime capability. Consumer
+projects should derive drawing geometry from their CAD source and use this
+shared library for annotations instead of vendoring or mirroring the Codeberg
+repository independently.
 
 ## v0.5.0
 

@@ -100,6 +100,21 @@ echo "== BOSL2 OpenSCAD smoke test =="
 openscad -o "$OUT/bosl2.stl" "$ROOT/test/bosl2.scad"
 test -s "$OUT/bosl2.stl"
 
+echo
+echo "== openscad-new-dimensions SVG smoke test =="
+test -n "${OPENSCAD_NEW_DIMENSIONS_ROOT:-}"
+test -n "${OPENSCAD_NEW_DIMENSIONS_COMMIT:-}"
+test -f "${OPENSCAD_NEW_DIMENSIONS_ROOT}/dimensions.scad"
+test -f "${OPENSCAD_NEW_DIMENSIONS_ROOT}/demo/demo.scad"
+
+openscad \
+  -o "$OUT/openscad-new-dimensions.svg" \
+  "${OPENSCAD_NEW_DIMENSIONS_ROOT}/demo/demo.scad"
+
+test -s "$OUT/openscad-new-dimensions.svg"
+grep -qi '<svg' "$OUT/openscad-new-dimensions.svg"
+printf 'openscad-new-dimensions=%s\n' "$OPENSCAD_NEW_DIMENSIONS_COMMIT"
+
 if [[ "$PROFILE" == "full" ]]; then
   echo
   echo "== pybosl2 Python dependencies =="

@@ -1,6 +1,6 @@
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
-ARG OPENSCAD_NEW_DIMENSIONS_REF=HEAD
+ARG OPENSCAD_NEW_DIMENSIONS_COMMIT=d37828e26df6067fbd872e8e291c6b0b19298243
 ARG PYBOSL2_VERSION=0.6.7
 ARG SHAPELY_VERSION=2.1.2
 ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
@@ -11,7 +11,7 @@ FROM ubuntu:24.04 AS openscad
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BOSL2_VERSION
-ARG OPENSCAD_NEW_DIMENSIONS_REF
+ARG OPENSCAD_NEW_DIMENSIONS_COMMIT
 ARG OPENSCAD_DOCSGEN_VERSION
 ARG PILLOW_VERSION
 ARG SCONS_VERSION
@@ -52,22 +52,26 @@ RUN set -eux; \
     rm -rf /tmp/bosl2 /tmp/bosl2.tar.gz; \
     test -f /opt/openscad-libraries/BOSL2/std.scad
 
-# Probe the Codeberg-hosted OpenSCAD dimensioning library in the same shared
-# library location as BOSL2. This feature branch intentionally resolves HEAD
-# once so CI can prove Codeberg reachability and report the exact commit.
-# Before merge/release this MUST be replaced by an immutable commit pin.
+# openscad-new-dimensions is a shared OpenSCAD-facing runtime library.
+# Fetch one immutable Codeberg commit directly; consumers use it through the
+# existing OPENSCADPATH instead of carrying a repository-local mirror.
 RUN set -eux; \
-    git clone --depth 1 \
-      "https://codeberg.org/adrien-delhorme/openscad-new-dimensions.git" \
-      /tmp/openscad-new-dimensions; \
+    test -n "${OPENSCAD_NEW_DIMENSIONS_COMMIT}"; \
+    git init -q /tmp/openscad-new-dimensions; \
+    git -C /tmp/openscad-new-dimensions remote add origin \
+      "https://codeberg.org/adrien-delhorme/openscad-new-dimensions.git"; \
+    git -C /tmp/openscad-new-dimensions fetch --depth 1 origin \
+      "${OPENSCAD_NEW_DIMENSIONS_COMMIT}"; \
+    git -C /tmp/openscad-new-dimensions checkout -q --detach FETCH_HEAD; \
     resolved="$(git -C /tmp/openscad-new-dimensions rev-parse HEAD)"; \
-    echo "openscad-new-dimensions resolved commit: ${resolved}"; \
-    echo "openscad-new-dimensions top-level files:"; \
-    find /tmp/openscad-new-dimensions -maxdepth 2 -type f -printf '%P\n' | sort; \
+    test "${resolved}" = "${OPENSCAD_NEW_DIMENSIONS_COMMIT}"; \
+    test -f /tmp/openscad-new-dimensions/dimensions.scad; \
+    test -f /tmp/openscad-new-dimensions/demo/demo.scad; \
     rm -rf /tmp/openscad-new-dimensions/.git; \
     mv /tmp/openscad-new-dimensions /opt/openscad-libraries/openscad-new-dimensions
 
 ENV OPENSCAD_NEW_DIMENSIONS_ROOT=/opt/openscad-libraries/openscad-new-dimensions
+ENV OPENSCAD_NEW_DIMENSIONS_COMMIT=${OPENSCAD_NEW_DIMENSIONS_COMMIT}
 
 # Shared OpenSCAD project tooling. Pillow remains here because the public
 # scad-image-watermark command is part of normal OpenSCAD publication.

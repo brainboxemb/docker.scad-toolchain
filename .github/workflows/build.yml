@@ -51,6 +51,7 @@ jobs:
 
           echo "pythonscad=${PYTHONSCAD_VERSION}" >> "$GITHUB_OUTPUT"
           echo "bosl2=${BOSL2_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "openscad_new_dimensions=${OPENSCAD_NEW_DIMENSIONS_COMMIT}" >> "$GITHUB_OUTPUT"
           echo "pybosl2=${PYBOSL2_VERSION}" >> "$GITHUB_OUTPUT"
           echo "shapely=${SHAPELY_VERSION}" >> "$GITHUB_OUTPUT"
           echo "docsgen=${OPENSCAD_DOCSGEN_VERSION}" >> "$GITHUB_OUTPUT"
@@ -102,6 +103,7 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
           build-args: |
             BOSL2_VERSION=${{ steps.versions.outputs.bosl2 }}
+            OPENSCAD_NEW_DIMENSIONS_COMMIT=${{ steps.versions.outputs.openscad_new_dimensions }}
             OPENSCAD_DOCSGEN_VERSION=${{ steps.versions.outputs.docsgen }}
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
