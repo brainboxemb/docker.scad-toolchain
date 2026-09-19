@@ -88,8 +88,9 @@ license/copyright files for the direct runtime components and generates the PDF
 from the same assembled text with a standard-library-only generator.
 
 The normal Ubuntu package copyright files remain present under
-`/usr/share/doc/*/copyright`. Release-tag builds also retain the generated TXT,
-PDF and inventory files as a CI release artifact for both profiles.
+`/usr/share/doc/*/copyright`. Release-tag builds retain the generated TXT, PDF and inventory files as a CI
+artifact and publish the profile-specific TXT/PDF files directly on the GitHub
+Release page. Supporting license/package inventories are attached as one ZIP.
 
 `scad-toolchain-info` prints the in-image TXT/PDF paths.
 
@@ -380,7 +381,7 @@ versioning.
 Current development target:
 
 ```text
-v0.5.2
+v0.5.3
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
@@ -396,7 +397,7 @@ The external test-suite version is independent from the toolchain version. A
 toolchain-only release does not force a test-suite version bump when the
 functional consumer contract is unchanged.
 
-For `v0.5.2` the sequence is:
+For `v0.5.3` the sequence is:
 
 ```text
 main
@@ -404,16 +405,17 @@ main
   -> internal smoke PASS
   -> docker.scad-toolchain.test against :edge PASS
 
-tag docker.scad-toolchain v0.5.2
-  -> publish both :v0.5.2 profiles
+tag docker.scad-toolchain v0.5.3
+  -> publish both :v0.5.3 profiles
   -> internal smoke PASS
-  -> automatic docker.scad-toolchain.test against :v0.5.2 PASS
+  -> publish GitHub Release with downloadable acknowledgment TXT/PDF assets
+  -> automatic docker.scad-toolchain.test against :v0.5.3 PASS
   -> mutable Pages /latest/ updated
 
-tag docker.scad-toolchain.test test-v0.5.1-toolchain-v0.5.2
-  -> unchanged released external suite v0.5.1 against both :v0.5.2 profiles PASS
+tag docker.scad-toolchain.test test-v0.5.1-toolchain-v0.5.3
+  -> unchanged released external suite v0.5.1 against both :v0.5.3 profiles PASS
   -> permanent Pages report:
-     /test-v0.5.1-toolchain-v0.5.2/
+     /test-v0.5.1-toolchain-v0.5.3/
 ```
 
 Only after the permanent tagged verification report is green should downstream
@@ -423,10 +425,15 @@ Create the runtime release through the permanent GitHub Actions Release
 workflow using:
 
 ```text
-version      v0.5.2
+version      v0.5.3
 release_sha  exact already-verified main commit SHA
 ```
 
 The release workflow creates the annotated tag and explicitly starts the normal
 Build workflow on that tag. The Build workflow remains authoritative for
-publishing both images and triggering external verification.
+publishing both images, generating the release documents, creating/updating the
+GitHub Release assets and triggering external verification.
+
+The Git tag and GHCR image tags remain the immutable software identity. GitHub
+Release assets are publication metadata for that same tag and may be re-uploaded
+only from the exact tag build when a workflow rerun is required.

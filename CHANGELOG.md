@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.5.3` | Publish acknowledgment TXT/PDF directly as GitHub Release assets |
 | `v0.5.2` | Open-source acknowledgment TXT/PDF and runtime license inventories |
 | `v0.5.1` | Pinned OpenSCAD dimensioning library with SVG smoke coverage |
 | `v0.5.0` | Capability-focused OpenSCAD and full/dual runtime image family |
@@ -20,6 +21,31 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.5.3
+
+### Added
+
+- GitHub Release publication for the generated open-source acknowledgment
+  documents on immutable toolchain tag builds.
+- Direct, versioned release assets for the OpenSCAD-focused and full-profile
+  acknowledgment PDFs and matching TXT files.
+- A supporting compliance ZIP containing the direct-license index and installed
+  Debian/Python package inventories for both profiles.
+- Release-build assertions that the expected GitHub Release assets are present.
+
+### Changed
+
+- Prepare the release-document bundle on normal PR builds as well, so bundle
+  creation is exercised before an immutable tag is created.
+- Keep the existing Actions artifact as CI evidence while making the GitHub
+  Release page the normal user-facing download location for acknowledgment
+  documents.
+
+### Release boundary
+
+This is producer/release behavior only. Runtime capabilities are unchanged from
+v0.5.2, so the existing external functional suite version remains applicable.
 
 ## v0.5.2
 
