@@ -87,6 +87,12 @@ System-package notices remain with the installed packages under
 `/usr/share/doc/*/copyright`; inventories make the actual transitive image
 contents auditable.
 
+For immutable release tags, the same generated acknowledgment TXT/PDF documents
+must also be published as direct GitHub Release assets. Keep the Actions
+artifact as CI evidence, but treat the GitHub Release page as the normal
+user-facing download location. Release-asset publication must be idempotent for
+safe reruns of the exact same immutable tag build.
+
 ## Release discipline
 
 A toolchain release is not accepted merely because an image tag exists.
