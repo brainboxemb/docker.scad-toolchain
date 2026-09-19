@@ -53,13 +53,16 @@ grep -Eiq '^Pillow[[:space:]]' "${PYTHON_INVENTORY}"
 grep -Eiq '^SCons[[:space:]]' "${PYTHON_INVENTORY}"
 if [[ "$PROFILE" == "drawing" ]]; then
   grep -Eiq '^inkscape[[:space:]]' "${DEBIAN_INVENTORY}"
+  grep -Eiq '^drawsvg[[:space:]]' "${PYTHON_INVENTORY}"
   grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -Eq '^  Package[[:space:]]+:[[:space:]]+[^[:space:]].*$'
+  grep -A2 '^drawsvg$' "${ACK_TXT}" | grep -Eq '^  Version[[:space:]]+:[[:space:]]+[^[:space:]].*$'
   if grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'; then
     echo "ERROR: drawing-profile acknowledgments report Inkscape as not installed." >&2
     exit 1
   fi
 else
   grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'
+  grep -A2 '^drawsvg$' "${ACK_TXT}" | grep -q 'not installed in this profile'
 fi
 if [[ "$PROFILE" == "full" ]]; then
   grep -Eiq '^pybosl2[[:space:]]' "${PYTHON_INVENTORY}"
@@ -156,13 +159,18 @@ if [[ "$PROFILE" == "drawing" ]]; then
   echo "== Drawing publication: OpenSCAD SVG -> Inkscape PNG/PDF =="
   command -v inkscape >/dev/null
   inkscape --version
+  python3 -c 'import drawsvg, importlib.metadata as m; print("drawsvg " + m.version("drawsvg"))'
 
   openscad -o "$OUT/drawing-source.svg" "$ROOT/test/drawing_2d.scad"
   test -s "$OUT/drawing-source.svg"
   grep -qi '<svg' "$OUT/drawing-source.svg"
 
-  inkscape "$OUT/drawing-source.svg" --export-area-page --export-type=png --export-filename="$OUT/drawing-output.png"
-  inkscape "$OUT/drawing-source.svg" --export-area-page --export-type=pdf --export-filename="$OUT/drawing-output.pdf"
+  python3 "$ROOT/test/drawsvg_smoke.py" "$OUT/drawing-composed.svg"
+  test -s "$OUT/drawing-composed.svg"
+  grep -q 'DRAWING RUNTIME' "$OUT/drawing-composed.svg"
+
+  inkscape "$OUT/drawing-composed.svg" --export-area-page --export-type=png --export-filename="$OUT/drawing-output.png"
+  inkscape "$OUT/drawing-composed.svg" --export-area-page --export-type=pdf --export-filename="$OUT/drawing-output.pdf"
 
   test -s "$OUT/drawing-output.png"
   test -s "$OUT/drawing-output.pdf"

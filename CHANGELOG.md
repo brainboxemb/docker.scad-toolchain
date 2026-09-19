@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.6.1` | Pinned drawsvg authoring library in the drawing runtime |
 | `v0.6.0` | Optional Inkscape drawing runtime; remove OpenSCAD dimension library from current runtime |
 | `v0.5.3` | Publish acknowledgment TXT/PDF directly as GitHub Release assets |
 | `v0.5.2` | Open-source acknowledgment TXT/PDF and runtime license inventories |
@@ -22,6 +23,30 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.6.1
+
+### Added
+
+- Pinned `drawsvg 2.4.2` in the drawing runtime only.
+- Runtime diagnostics, Python package inventory and open-source acknowledgment
+  coverage for the drawing-only SVG authoring dependency.
+- Internal smoke coverage that produces SVG through drawsvg and renders/exports
+  that SVG through Inkscape.
+
+### Architecture
+
+```text
+OpenSCAD geometry/projections
+    -> Python + drawsvg composition
+    -> canonical SVG
+    -> Inkscape CLI
+    -> PNG / PDF
+```
+
+The canonical artifact stays ordinary SVG, so it remains directly inspectable
+and editable in Inkscape while drawing semantics stay in project-owned Python
+code.
 
 ## v0.6.0
 

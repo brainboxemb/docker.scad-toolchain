@@ -34,12 +34,13 @@ Published as:
 ghcr.io/brainboxemb/scad-toolchain-drawing:<version>
 ```
 
-It extends the OpenSCAD-focused runtime with Inkscape CLI for deterministic
-technical-drawing rendering and export. The intended pipeline is:
+It extends the OpenSCAD-focused runtime with drawsvg for readable Python SVG
+authoring and Inkscape CLI for deterministic rendering/export. The intended pipeline is:
 
 ```text
 OpenSCAD geometry/projections
-    -> scripted Python/SVG composition
+    -> Python + drawsvg composition
+    -> canonical SVG
     -> Inkscape CLI
     -> SVG / PNG / PDF
 ```
@@ -147,6 +148,7 @@ The drawing profile additionally exposes:
 
 ```text
 inkscape
+Python package: drawsvg
 ```
 
 The full profile additionally exposes:
@@ -313,6 +315,7 @@ docker build \\
   --build-arg OPENSCAD_DOCSGEN_VERSION="$OPENSCAD_DOCSGEN_VERSION" \\
   --build-arg PILLOW_VERSION="$PILLOW_VERSION" \\
   --build-arg SCONS_VERSION="$SCONS_VERSION" \\
+  --build-arg DRAWSVG_VERSION="$DRAWSVG_VERSION" \\
   -t scad-toolchain-drawing:local .
 ```
 
@@ -400,7 +403,7 @@ versioning.
 Current development target:
 
 ```text
-v0.6.0
+v0.6.1
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
