@@ -61,7 +61,11 @@ def template_values(profile: str) -> dict[str, str]:
         "OPENSCAD_DOCSGEN_VERSION": environment("OPENSCAD_DOCSGEN_VERSION"),
         "PILLOW_VERSION": environment("PILLOW_VERSION"),
         "SCONS_VERSION": environment("SCONS_VERSION"),
-        "INKSCAPE_PACKAGE_VERSION": package_version("inkscape"),
+        "INKSCAPE_PACKAGE_VERSION": (
+            package_version("inkscape")
+            if profile == "drawing"
+            else "not installed in this profile"
+        ),
     }
 
 
