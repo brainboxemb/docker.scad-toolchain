@@ -36,7 +36,7 @@ ghcr.io/brainboxemb/scad-toolchain-drawing:<version>
 
 It extends the OpenSCAD-focused runtime with drawsvg for readable Python SVG
 authoring, Inkscape CLI for deterministic rendering/export, and a checksum-
-pinned official FreeCAD Linux bundle for headless TechDraw CAD-style hidden-
+pinned official FreeCAD Linux AppImage for headless TechDraw CAD-style hidden-
 line-removal reference projections.
 
 The normal publication path remains:

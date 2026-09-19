@@ -7,8 +7,8 @@ ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
 ARG SCONS_VERSION=4.11.1
 ARG DRAWSVG_VERSION=2.4.2
-ARG FREECAD_VERSION=1.0.2
-ARG FREECAD_APPIMAGE_SHA256=e00be00ad9fdb12b05c5002bfd1aa2ea8126f2c1d4e2fb603eb7423b72904f61
+ARG FREECAD_VERSION=1.1.3
+ARG FREECAD_APPIMAGE_SHA256=3a853eb69ee595f779f2255dbf80a765926981d8ff68903cefee4dfb03a8f5ef
 
 FROM ubuntu:24.04 AS openscad
 
@@ -117,8 +117,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # environment so the bundled Python/OCCT/TechDraw stack stays self-contained.
 RUN set -eux; \
     test "$(dpkg --print-architecture)" = "amd64"; \
-    freecad_asset="FreeCAD_${FREECAD_VERSION}-conda-Linux-x86_64-py311.AppImage"; \
-    freecad_url="https://github.com/FreeCAD/FreeCAD-Bundle/releases/download/${FREECAD_VERSION}/${freecad_asset}"; \
+    freecad_asset="FreeCAD_${FREECAD_VERSION}-Linux-x86_64-py311.AppImage"; \
+    freecad_url="https://github.com/FreeCAD/FreeCAD/releases/download/${FREECAD_VERSION}/${freecad_asset}"; \
     curl -fL "$freecad_url" -o /tmp/freecad.AppImage; \
     echo "${FREECAD_APPIMAGE_SHA256}  /tmp/freecad.AppImage" | sha256sum -c -; \
     chmod +x /tmp/freecad.AppImage; \

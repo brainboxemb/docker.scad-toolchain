@@ -56,9 +56,8 @@ Inkscape
 
 FreeCAD
   Version      : @FREECAD_VERSION@
-  Distribution : official FreeCAD-Bundle Linux AppImage
+  Distribution : official FreeCAD Linux AppImage
   Source       : https://github.com/FreeCAD/FreeCAD
-  Bundle       : https://github.com/FreeCAD/FreeCAD-Bundle
 
 drawsvg
   Version      : @DRAWSVG_VERSION@
