@@ -148,7 +148,10 @@ The drawing profile additionally exposes:
 
 ```text
 inkscape
-Python package: drawsvg
+magick   (ImageMagick 7)
+vcs      (vcs2l)
+codespell
+Python packages: drawsvg, colorama, Markdown
 ```
 
 The full profile additionally exposes:
@@ -403,7 +406,7 @@ versioning.
 Current development target:
 
 ```text
-v0.6.1
+v0.6.2
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
