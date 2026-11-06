@@ -1,3 +1,26 @@
+# ImageMagick 7 is built only for the drawing/publication runtime.
+# Ubuntu 24.04's ImageMagick package is v6, while NopSCADlib invokes 'magick'.
+FROM ubuntu:24.04 AS imagemagick-build
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG IMAGEMAGICK_VERSION=7.1.2-1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl build-essential pkg-config libpng-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /tmp
+RUN set -eux; \
+    curl -fL "https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${IMAGEMAGICK_VERSION}.tar.gz" -o imagemagick.tar.gz; \
+    mkdir imagemagick-source; \
+    tar -xzf imagemagick.tar.gz -C imagemagick-source --strip-components=1; \
+    cd imagemagick-source; \
+    ./configure --prefix=/opt/imagemagick --disable-static --disable-openmp \
+        --without-perl --without-magick-plus-plus --with-modules=no \
+        --with-png=yes --without-jpeg --without-tiff --without-webp \
+        --without-heic --without-freetype; \
+    make -j2; \
+    make install; \
+    cp LICENSE /opt/imagemagick/LICENSE.upstream
+
 ARG TOOLCHAIN_VERSION=0.6.1
 ARG PYTHONSCAD_VERSION=1.1.2
 ARG BOSL2_VERSION=2.0.752
@@ -7,6 +30,11 @@ ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
 ARG SCONS_VERSION=4.11.1
 ARG DRAWSVG_VERSION=2.4.2
+ARG IMAGEMAGICK_VERSION=7.1.2-1
+ARG COLORAMA_VERSION=0.4.6
+ARG MARKDOWN_VERSION=3.9
+ARG CODESPELL_VERSION=2.4.1
+ARG VCS2L_VERSION=1.1.7
 
 FROM ubuntu:24.04 AS openscad
 
@@ -98,13 +126,25 @@ FROM openscad AS drawing
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TOOLCHAIN_VERSION
 ARG DRAWSVG_VERSION
+ARG IMAGEMAGICK_VERSION
+ARG COLORAMA_VERSION
+ARG MARKDOWN_VERSION
+ARG CODESPELL_VERSION
+ARG VCS2L_VERSION
 
 LABEL org.opencontainers.image.title="SCAD toolchain drawing runtime"
 LABEL org.opencontainers.image.description="OpenSCAD toolchain plus deterministic technical-drawing publication with Inkscape"
 LABEL org.opencontainers.image.scad-toolchain-profile="drawing"
 
-RUN apt-get update && apt-get install -y --no-install-recommends inkscape \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    inkscape libpng16-16t64 python-is-python3 \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=imagemagick-build /opt/imagemagick /opt/imagemagick
+ENV PATH="/opt/imagemagick/bin:${PATH}" \
+    LD_LIBRARY_PATH="/opt/imagemagick/lib:${LD_LIBRARY_PATH}" \
+    MAGICK_HOME="/opt/imagemagick"
+
 
 # Python owns readable SVG composition. Inkscape remains the separate
 # rendering/export layer, so drawsvg is installed without raster extras.
@@ -112,10 +152,22 @@ RUN python3 -m pip install \
       --no-cache-dir \
       --break-system-packages \
       "drawsvg==${DRAWSVG_VERSION}" \
-    && python3 -c 'import drawsvg, importlib.metadata as m; assert m.version("drawsvg")'
+      "colorama==${COLORAMA_VERSION}" \
+      "Markdown==${MARKDOWN_VERSION}" \
+      "codespell==${CODESPELL_VERSION}" \
+      "vcs2l==${VCS2L_VERSION}" \
+    && python3 -c 'import drawsvg, colorama, markdown, importlib.metadata as m; assert m.version("drawsvg")' \
+    && magick -version | grep -q "ImageMagick 7" \
+    && vcs --help >/dev/null \
+    && codespell --version
 
 ENV SCAD_TOOLCHAIN_PROFILE=drawing
 ENV DRAWSVG_VERSION=${DRAWSVG_VERSION}
+ENV COLORAMA_VERSION=${COLORAMA_VERSION}
+ENV MARKDOWN_VERSION=${MARKDOWN_VERSION}
+ENV CODESPELL_VERSION=${CODESPELL_VERSION}
+ENV VCS2L_VERSION=${VCS2L_VERSION}
+ENV IMAGEMAGICK_VERSION=${IMAGEMAGICK_VERSION}
 
 RUN build-open-source-acknowledgments \
       --input /usr/local/share/scad-toolchain/OPEN_SOURCE_ACKNOWLEDGMENTS.txt \
