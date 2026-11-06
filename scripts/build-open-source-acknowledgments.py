@@ -66,6 +66,11 @@ def template_values(profile: str) -> dict[str, str]:
             if profile == "drawing"
             else "not installed in this profile"
         ),
+        "IMAGEMAGICK_VERSION": (environment("IMAGEMAGICK_VERSION") if profile == "drawing" else "not installed in this profile"),
+        "COLORAMA_VERSION": (environment("COLORAMA_VERSION") if profile == "drawing" else "not installed in this profile"),
+        "MARKDOWN_VERSION": (environment("MARKDOWN_VERSION") if profile == "drawing" else "not installed in this profile"),
+        "CODESPELL_VERSION": (environment("CODESPELL_VERSION") if profile == "drawing" else "not installed in this profile"),
+        "VCS2L_VERSION": (environment("VCS2L_VERSION") if profile == "drawing" else "not installed in this profile"),
         "DRAWSVG_VERSION": (
             environment("DRAWSVG_VERSION")
             if profile == "drawing"
@@ -136,6 +141,11 @@ def direct_license_groups(profile: str) -> list[tuple[str, list[Path]]]:
                 first_existing_globs(["/usr/share/doc/inkscape/copyright"]),
             ),
             ("drawsvg", distribution_license_files("drawsvg")),
+            ("ImageMagick", [Path("/opt/imagemagick/LICENSE.upstream")]),
+            ("colorama", distribution_license_files("colorama")),
+            ("Markdown", distribution_license_files("Markdown")),
+            ("codespell", distribution_license_files("codespell")),
+            ("vcs2l", distribution_license_files("vcs2l")),
         ])
     if profile == "full":
         upstream_copying = Path("/opt/pythonscad/COPYING.upstream")

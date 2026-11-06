@@ -54,6 +54,14 @@ grep -Eiq '^SCons[[:space:]]' "${PYTHON_INVENTORY}"
 if [[ "$PROFILE" == "drawing" ]]; then
   grep -Eiq '^inkscape[[:space:]]' "${DEBIAN_INVENTORY}"
   grep -Eiq '^drawsvg[[:space:]]' "${PYTHON_INVENTORY}"
+  for pkg in colorama Markdown codespell vcs2l; do
+    grep -Eiq "^${pkg}[[:space:]]" "${PYTHON_INVENTORY}"
+  done
+  command -v magick >/dev/null
+  magick -version | grep -q 'ImageMagick 7'
+  command -v vcs >/dev/null
+  vcs --help >/dev/null
+  python3 -c 'import colorama, markdown; assert colorama and markdown'
   grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -Eq '^  Package[[:space:]]+:[[:space:]]+[^[:space:]].*$'
   grep -A2 '^drawsvg$' "${ACK_TXT}" | grep -Eq '^  Version[[:space:]]+:[[:space:]]+[^[:space:]].*$'
   if grep -A2 '^Inkscape$' "${ACK_TXT}" | grep -q 'not installed in this profile'; then
@@ -168,6 +176,9 @@ if [[ "$PROFILE" == "drawing" ]]; then
   python3 "$ROOT/test/drawsvg_smoke.py" "$OUT/drawing-composed.svg"
   test -s "$OUT/drawing-composed.svg"
   grep -q 'DRAWING RUNTIME' "$OUT/drawing-composed.svg"
+
+  magick "$OUT/watermark-input.png" -resize 240x180 "$OUT/imagemagick-small.png"
+  test -s "$OUT/imagemagick-small.png"
 
   inkscape "$OUT/drawing-composed.svg" --export-area-page --export-type=png --export-filename="$OUT/drawing-output.png"
   inkscape "$OUT/drawing-composed.svg" --export-area-page --export-type=pdf --export-filename="$OUT/drawing-output.pdf"

@@ -58,6 +58,23 @@ drawsvg
   Version      : @DRAWSVG_VERSION@
   Source       : https://github.com/cduck/drawsvg
 
+NopSCADlib build-tool prerequisites (upstream library fetched by consumers)
+  ImageMagick
+    Version    : @IMAGEMAGICK_VERSION@
+    Source     : https://github.com/ImageMagick/ImageMagick
+  colorama
+    Version    : @COLORAMA_VERSION@
+    Source     : https://github.com/tartley/colorama
+  Markdown
+    Version    : @MARKDOWN_VERSION@
+    Source     : https://github.com/Python-Markdown/markdown
+  codespell
+    Version    : @CODESPELL_VERSION@
+    Source     : https://github.com/codespell-project/codespell
+  vcs2l
+    Version    : @VCS2L_VERSION@
+    Source     : https://github.com/ros-infrastructure/vcs2l
+
 FULL RUNTIME ADDITIONS
 ----------------------
 

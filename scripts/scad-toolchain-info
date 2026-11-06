@@ -41,6 +41,15 @@ else
   echo "not installed"
 fi
 
+if [[ "$PROFILE" == "drawing" ]]; then
+  printf "ImageMagick: "
+  magick -version | head -n1
+  printf "vcs2l      : "
+  python3 -c 'import importlib.metadata as m; print(m.version("vcs2l"))'
+  printf "codespell  : "
+  codespell --version
+fi
+
 printf "BOSL2      : v%s\n" "${BOSL2_VERSION:-unknown}"
 
 printf "pybosl2    : "
