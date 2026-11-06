@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.6.2` | NopSCADlib documentation prerequisites in shared drawing runtime |
 | `v0.6.1` | Pinned drawsvg authoring library in the drawing runtime |
 | `v0.6.0` | Optional Inkscape drawing runtime; remove OpenSCAD dimension library from current runtime |
 | `v0.5.3` | Publish acknowledgment TXT/PDF directly as GitHub Release assets |
@@ -23,6 +24,18 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.6.2
+
+### Added
+
+- ImageMagick 7 (`magick`) to the **drawing** profile for NopSCADlib's generated assembly/part images.
+- Pinned `colorama`, `Markdown`, `codespell`, and `vcs2l` so projects can fetch a pinned NopSCADlib checkout and run upstream `make_all.py`.
+- ImageMagick and Python dependencies are accounted for in the drawing image's third-party notices and smoke coverage.
+
+### Scope
+
+NopSCADlib itself is **not installed** in the Docker runtime. The consumer project pins it with `dependencies.repos` and supplies `OPENSCADPATH`. No additional Dockerfile is needed in the model archive. The OpenSCAD and full runtimes remain unchanged.
 
 ## v0.6.1
 
