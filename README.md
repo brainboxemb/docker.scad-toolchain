@@ -144,6 +144,11 @@ openscad-mdimggen
 scad-image-watermark
 ```
 
+The drawing profile additionally exposes a pinned stable Inkscape 1.4.4
+(Ubuntu 24.04 package via the upstream stable PPA). `versions.env` defines
+both the upstream version and the exact Debian package revision. Only
+the drawing profile includes this dependency.
+
 The drawing profile additionally exposes:
 
 ```text
@@ -406,7 +411,7 @@ versioning.
 Current development target:
 
 ```text
-v0.6.2
+v0.6.3
 ```
 
 Dependency pins and the release version are defined in `versions.env`.
