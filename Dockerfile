@@ -209,15 +209,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends libfuse2 \
 
 # PythonSCAD release AppImage. Resolve the exact Linux x86_64 AppImage from the
 # requested GitHub release so the Dockerfile does not depend on an asset name.
-# Query GitHub release metadata with the workflow's read-only token.
-# Unauthenticated GitHub API calls can be rate-limited (HTTP 403) during
-# cold PR builds. BuildKit secrets do not persist in the container layers.
+# GitHub Actions supplies a read-only token as a BuildKit secret for the
+# release API. Local builds without this secret use the public endpoint
+# (subject to GitHub's unauthenticated rate limit). Secrets are not stored
+# in image layers or surfaced in the build log.
 RUN --mount=type=secret,id=github_token \
     set -eu; \
-    release="$(curl --retry 3 --retry-all-errors --retry-delay 2 -fsSL \
-      -H "Accept: application/vnd.github+json" \
-      -H "Authorization: Bearer $(cat /run/secrets/github_token)" \
-      "https://api.github.com/repos/pythonscad/pythonscad/releases/tags/v${PYTHONSCAD_VERSION}")"; \
+    release_api="https://api.github.com/repos/pythonscad/pythonscad/releases/tags/v${PYTHONSCAD_VERSION}"; \
+    if [ -s /run/secrets/github_token ]; then \
+      release="$(curl --retry 3 --retry-all-errors --retry-delay 2 -fsSL \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer $(cat /run/secrets/github_token)" \
+        "$release_api")"; \
+    else \
+      release="$(curl --retry 3 --retry-all-errors --retry-delay 2 -fsSL \
+        -H "Accept: application/vnd.github+json" "$release_api")"; \
+    fi; \
     url="$(printf '%s' "$release" | jq -r '[.assets[] | select(.name | test("(?i)(x86_64|amd64).*\\.AppImage$|\\.AppImage.*(x86_64|amd64)$"))][0].browser_download_url // empty')"; \
     if [ -z "$url" ]; then \
       url="$(printf '%s' "$release" | jq -r '[.assets[] | select(.name | endswith(".AppImage"))][0].browser_download_url // empty')"; \
