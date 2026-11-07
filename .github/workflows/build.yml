@@ -177,6 +177,8 @@ jobs:
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
           tags: ${{ steps.meta_full.outputs.tags }}
           labels: ${{ steps.meta_full.outputs.labels }}
+          secrets: |
+            github_token=${{ github.token }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
