@@ -53,6 +53,7 @@ DRAWING RUNTIME ADDITIONS
 Inkscape
   Package      : @INKSCAPE_PACKAGE_VERSION@
   Source       : https://gitlab.com/inkscape/inkscape
+  Package repo : https://launchpad.net/~inkscape.dev/+archive/ubuntu/stable
 
 drawsvg
   Version      : @DRAWSVG_VERSION@

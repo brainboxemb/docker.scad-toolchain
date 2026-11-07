@@ -10,6 +10,7 @@ Released Git and container tags are immutable.
 
 | Version | Main change |
 | --- | --- |
+| `v0.6.3` | Upgrade drawing-only Inkscape to pinned 2026 stable 1.4.4 |
 | `v0.6.2` | NopSCADlib documentation prerequisites in shared drawing runtime |
 | `v0.6.1` | Pinned drawsvg authoring library in the drawing runtime |
 | `v0.6.0` | Optional Inkscape drawing runtime; remove OpenSCAD dimension library from current runtime |
@@ -24,6 +25,27 @@ Released Git and container tags are immutable.
 | `v0.1.2` | Git added to the runtime |
 | `v0.1.1` | Stable public `openscad` command |
 | `v0.1.0` | Initial OpenSCAD/PythonSCAD toolchain |
+
+## v0.6.3
+
+### Changed
+
+- Upgrade the **drawing** runtime from Ubuntu 24.04's Inkscape 1.2.2 to
+  the upstream stable **1.4.4**, released in May 2026.
+- Install the exact Ubuntu 24.04 package from the Inkscape project's
+  `ppa:inkscape.dev/stable`; keep its full Debian package version pinned
+  in `versions.env` and assert the resolved executable version in CI.
+- Preserve the lightweight OpenSCAD profile and the full/PythonSCAD profile
+  unchanged. The new upstream APT repository is confined to the drawing stage.
+- Validate the existing OpenSCAD -> SVG -> Inkscape PNG/PDF publication
+  path through internal and separate external consumer tests.
+
+### Release discipline
+
+Do not change or overwrite the already-published `v0.6.2` tag.
+The `v0.6.3` image remains a candidate until producer :edge, external
+consumer :edge, the immutable tag build and the permanent external
+verification report all pass.
 
 ## v0.6.2
 

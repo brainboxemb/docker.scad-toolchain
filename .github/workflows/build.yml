@@ -60,6 +60,8 @@ jobs:
           echo "pillow=${PILLOW_VERSION}" >> "$GITHUB_OUTPUT"
           echo "scons=${SCONS_VERSION}" >> "$GITHUB_OUTPUT"
           echo "drawsvg=${DRAWSVG_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "inkscape=${INKSCAPE_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "inkscape_deb=${INKSCAPE_DEB_VERSION}" >> "$GITHUB_OUTPUT"
           echo "imagemagick=${IMAGEMAGICK_VERSION}" >> "$GITHUB_OUTPUT"
           echo "colorama=${COLORAMA_VERSION}" >> "$GITHUB_OUTPUT"
           echo "markdown=${MARKDOWN_VERSION}" >> "$GITHUB_OUTPUT"
@@ -145,6 +147,8 @@ jobs:
             PILLOW_VERSION=${{ steps.versions.outputs.pillow }}
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
             DRAWSVG_VERSION=${{ steps.versions.outputs.drawsvg }}
+            INKSCAPE_VERSION=${{ steps.versions.outputs.inkscape }}
+            INKSCAPE_DEB_VERSION=${{ steps.versions.outputs.inkscape_deb }}
             IMAGEMAGICK_VERSION=${{ steps.versions.outputs.imagemagick }}
             COLORAMA_VERSION=${{ steps.versions.outputs.colorama }}
             MARKDOWN_VERSION=${{ steps.versions.outputs.markdown }}
@@ -173,6 +177,8 @@ jobs:
             SCONS_VERSION=${{ steps.versions.outputs.scons }}
           tags: ${{ steps.meta_full.outputs.tags }}
           labels: ${{ steps.meta_full.outputs.labels }}
+          secrets: |
+            github_token=${{ github.token }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

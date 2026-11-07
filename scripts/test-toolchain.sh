@@ -167,6 +167,9 @@ if [[ "$PROFILE" == "drawing" ]]; then
   echo "== Drawing publication: OpenSCAD SVG -> Inkscape PNG/PDF =="
   command -v inkscape >/dev/null
   inkscape --version
+  if [[ -n "${INKSCAPE_VERSION:-}" ]]; then
+    inkscape --version | grep -F "Inkscape ${INKSCAPE_VERSION}"
+  fi
   python3 -c 'import drawsvg, importlib.metadata as m; print("drawsvg " + m.version("drawsvg"))'
 
   openscad -o "$OUT/drawing-source.svg" "$ROOT/test/drawing_2d.scad"

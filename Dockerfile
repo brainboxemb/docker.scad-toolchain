@@ -7,6 +7,8 @@ ARG OPENSCAD_DOCSGEN_VERSION=2.0.55
 ARG PILLOW_VERSION=12.3.0
 ARG SCONS_VERSION=4.11.1
 ARG DRAWSVG_VERSION=2.4.2
+ARG INKSCAPE_VERSION=1.4.4
+ARG INKSCAPE_DEB_VERSION=1:1.4.4+202605061436+dcaf3e7d9e~ubuntu24.04.1
 ARG IMAGEMAGICK_VERSION=7.1.2-1
 ARG COLORAMA_VERSION=0.4.6
 ARG MARKDOWN_VERSION=3.9
@@ -124,6 +126,8 @@ CMD ["scad-toolchain-info"]
 FROM openscad AS drawing
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG INKSCAPE_VERSION
+ARG INKSCAPE_DEB_VERSION
 ARG TOOLCHAIN_VERSION
 ARG DRAWSVG_VERSION
 ARG IMAGEMAGICK_VERSION
@@ -136,8 +140,16 @@ LABEL org.opencontainers.image.title="SCAD toolchain drawing runtime"
 LABEL org.opencontainers.image.description="OpenSCAD toolchain plus deterministic technical-drawing publication with Inkscape"
 LABEL org.opencontainers.image.scad-toolchain-profile="drawing"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    inkscape libpng16-16t64 python-is-python3 \
+# Ubuntu 24.04 universe ships Inkscape 1.2.2. Use the Inkscape project's
+# stable Launchpad PPA instead, and lock the *exact* 2026 1.4.4 package.
+# The PPA is only added to this drawing stage (not openscad/full).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+         software-properties-common libpng16-16t64 python-is-python3 \
+    && add-apt-repository -y ppa:inkscape.dev/stable \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends "inkscape=${INKSCAPE_DEB_VERSION}" \
+    && inkscape --version | grep -F "Inkscape ${INKSCAPE_VERSION}" \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=imagemagick-build /opt/imagemagick /opt/imagemagick
@@ -162,6 +174,7 @@ RUN python3 -m pip install \
     && codespell --version
 
 ENV SCAD_TOOLCHAIN_PROFILE=drawing
+ENV INKSCAPE_VERSION=${INKSCAPE_VERSION}
 ENV DRAWSVG_VERSION=${DRAWSVG_VERSION}
 ENV COLORAMA_VERSION=${COLORAMA_VERSION}
 ENV MARKDOWN_VERSION=${MARKDOWN_VERSION}
@@ -196,8 +209,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends libfuse2 \
 
 # PythonSCAD release AppImage. Resolve the exact Linux x86_64 AppImage from the
 # requested GitHub release so the Dockerfile does not depend on an asset name.
-RUN set -eux; \
-    release="$(curl -fsSL "https://api.github.com/repos/pythonscad/pythonscad/releases/tags/v${PYTHONSCAD_VERSION}")"; \
+# GitHub Actions supplies a read-only token as a BuildKit secret for the
+# release API. Local builds without this secret use the public endpoint
+# (subject to GitHub's unauthenticated rate limit). Secrets are not stored
+# in image layers or surfaced in the build log.
+RUN --mount=type=secret,id=github_token \
+    set -eu; \
+    release_api="https://api.github.com/repos/pythonscad/pythonscad/releases/tags/v${PYTHONSCAD_VERSION}"; \
+    if [ -s /run/secrets/github_token ]; then \
+      release="$(curl --retry 3 --retry-all-errors --retry-delay 2 -fsSL \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer $(cat /run/secrets/github_token)" \
+        "$release_api")"; \
+    else \
+      release="$(curl --retry 3 --retry-all-errors --retry-delay 2 -fsSL \
+        -H "Accept: application/vnd.github+json" "$release_api")"; \
+    fi; \
     url="$(printf '%s' "$release" | jq -r '[.assets[] | select(.name | test("(?i)(x86_64|amd64).*\\.AppImage$|\\.AppImage.*(x86_64|amd64)$"))][0].browser_download_url // empty')"; \
     if [ -z "$url" ]; then \
       url="$(printf '%s' "$release" | jq -r '[.assets[] | select(.name | endswith(".AppImage"))][0].browser_download_url // empty')"; \
